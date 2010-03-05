@@ -4,12 +4,12 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 {
 	const char *name;
 	name = node->value.element.name;
-	if ( !strcmp(name, "alsa") || !strcmp(name, "jack"))
+	if ( !strcmp(name, "alsa") || !strcmp(name, "jack") || !strcmp(name, "client") )
 	{
 		if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 		return ("\n");
 	}
-	if ( !strcmp(name, "client") )
+	if ( !strcmp(name, "port") )
 	{
 		if ( where == MXML_WS_BEFORE_OPEN )
 		return ("\n  ");
@@ -17,12 +17,30 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 	return NULL;
 }
 
-void alsa_store_connected_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
+void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_port_info_t* pinfo, mxml_node_t* client_node )
+{
+	const char* name;
+	snd_seq_port_info_set_client(pinfo, snd_seq_client_info_get_client(cinfo));
+	snd_seq_port_info_set_port(pinfo, -1);
+
+	while (snd_seq_query_next_port(seq, pinfo) >= 0)
+	{
+		name = snd_seq_port_info_get_name( pinfo );
+		mxml_node_t* port_node;
+		port_node = mxmlNewElement(client_node, "port");
+                mxmlElementSetAttr(port_node, "name", name);	
+	}
+}
+
+void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 {
 	const char* name;
 
 	snd_seq_client_info_t* cinfo;
 	snd_seq_client_info_alloca(&cinfo);
+	snd_seq_port_info_t *pinfo;
+	snd_seq_port_info_alloca(&pinfo); // allocate once, and reuse for all clients
+
 	snd_seq_client_info_set_client(cinfo, -1);
 
 	while (snd_seq_query_next_client(seq, cinfo) >= 0) 
@@ -32,6 +50,8 @@ void alsa_store_connected_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 		mxml_node_t* client_node;
 		client_node = mxmlNewElement(alsa_node, "client");
 		mxmlElementSetAttr(client_node, "name", name);
+
+		alsa_store_ports( seq, cinfo, pinfo, client_node );
 	}
 }
 
@@ -43,7 +63,7 @@ void alsa_store( snd_seq_t* seq, const char* filename )
 	xml_node = mxmlNewXML("1.0");
 	alsa_node = mxmlNewElement(xml_node, "alsa");
 
-	alsa_store_connected_clients( seq, alsa_node );
+	alsa_store_clients( seq, alsa_node );
 
 	FILE *fp;
 	if( (fp = fopen(filename, "w")) == NULL ){
