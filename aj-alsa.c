@@ -4,17 +4,57 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 {
 	const char *name;
 	name = node->value.element.name;
-	if ( !strcmp(name, "alsa") || !strcmp(name, "jack") || !strcmp(name, "client") )
+	if ( !strcmp(name, "alsa") || !strcmp(name, "jack") )
 	{
 		if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 		return ("\n");
 	}
-	if ( !strcmp(name, "port") )
+	if ( !strcmp(name, "client") )
 	{
-		if ( where == MXML_WS_BEFORE_OPEN )
+		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 		return ("\n  ");
 	}
+	if ( !strcmp(name, "port") )
+	{
+		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		return ("\n    ");
+	}
+	if ( !strcmp(name, "connection") )
+	{
+		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		return ("\n      ");
+	}
+	if ( !strcmp(name, "cid") || !strcmp(name, "pid") )
+	{
+		if ( where == MXML_WS_BEFORE_OPEN )
+		return ("\n        ");
+	}
 	return NULL;
+}
+
+void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
+{
+	snd_seq_query_subscribe_t *subs;
+	snd_seq_query_subscribe_alloca(&subs);
+	snd_seq_query_subscribe_set_root(subs, addr);
+	snd_seq_query_subscribe_set_type(subs, SND_SEQ_QUERY_SUBS_READ);
+	snd_seq_query_subscribe_set_index(subs, 0);
+
+	while (snd_seq_query_port_subscribers(seq, subs) >= 0)
+	{
+		const snd_seq_addr_t *addr;
+		addr = snd_seq_query_subscribe_get_addr(subs);
+
+		mxml_node_t* connection_node;
+		connection_node = mxmlNewElement(port_node, "connection");
+
+		mxml_node_t* client_node = mxmlNewElement(connection_node, "cid");
+		mxmlNewInteger(client_node, (int)addr->client);
+		mxml_node_t* port_node = mxmlNewElement(connection_node, "pid");
+		mxmlNewInteger(port_node, (int)addr->port);
+
+		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1);
+	}		
 }
 
 void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_port_info_t* pinfo, mxml_node_t* client_node )
@@ -29,6 +69,8 @@ void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_por
 		mxml_node_t* port_node;
 		port_node = mxmlNewElement(client_node, "port");
                 mxmlElementSetAttr(port_node, "name", name);	
+
+		alsa_store_connections(seq, snd_seq_port_info_get_addr(pinfo), port_node);
 	}
 }
 
