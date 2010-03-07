@@ -24,7 +24,7 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 		return ("\n      ");
 	}
-	if ( !strcmp(name, "cid") || !strcmp(name, "pid") )
+	if ( !strcmp(name, "c") || !strcmp(name, "p") )
 	{
 		if ( where == MXML_WS_BEFORE_OPEN )
 		return ("\n        ");
@@ -40,18 +40,32 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 	snd_seq_query_subscribe_set_type(subs, SND_SEQ_QUERY_SUBS_READ);
 	snd_seq_query_subscribe_set_index(subs, 0);
 
+	//to get the names of connected clients and ports
+	snd_seq_client_info_t* connected_cinfo;
+	snd_seq_client_info_alloca(&connected_cinfo);
+	snd_seq_port_info_t* connected_pinfo;
+	snd_seq_port_info_alloca(&connected_pinfo);
+
+	const char* client_name;
+	const char* port_name;
+
 	while (snd_seq_query_port_subscribers(seq, subs) >= 0)
 	{
 		const snd_seq_addr_t *addr;
 		addr = snd_seq_query_subscribe_get_addr(subs);
 
+		snd_seq_get_any_client_info(seq, addr->client, connected_cinfo);
+		client_name = snd_seq_client_info_get_name( connected_cinfo );
+		snd_seq_get_any_port_info(seq, addr->client, addr->port, connected_pinfo);
+		port_name = snd_seq_port_info_get_name( connected_pinfo );
+
 		mxml_node_t* connection_node;
 		connection_node = mxmlNewElement(port_node, "connection");
 
-		mxml_node_t* client_node = mxmlNewElement(connection_node, "cid");
-		mxmlNewInteger(client_node, (int)addr->client);
-		mxml_node_t* port_node = mxmlNewElement(connection_node, "pid");
-		mxmlNewInteger(port_node, (int)addr->port);
+		mxml_node_t* client_node = mxmlNewElement(connection_node, "c");
+		mxmlNewText(client_node, 0, client_name);
+		mxml_node_t* port_node = mxmlNewElement(connection_node, "p");
+		mxmlNewText(port_node, 0, port_name);
 
 		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1);
 	}		
