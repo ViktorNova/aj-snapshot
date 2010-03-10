@@ -146,20 +146,24 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 		dest_port_id = atoi(dest_id);
 
 		if (snd_seq_parse_address(seq, &sender, client_name) < 0) {
-			printf("client %s is not active", client_name);
+			printf("client %s is not active\n", client_name);
 		}
 		else sender.port = port_id;
 
 		if (snd_seq_parse_address(seq, &dest, dest_client_name) < 0) {
-			printf("client %s is not active", client_name);
+			printf("client %s is not active\n", client_name);
 		}
                 else dest.port = dest_port_id;
 
 		snd_seq_port_subscribe_set_sender(subs, &sender);
 		snd_seq_port_subscribe_set_dest(subs, &dest);
 
-		if (snd_seq_subscribe_port(seq, subs) < 0) {
-			printf("connection failed\n");
+		if (snd_seq_subscribe_port(seq, subs) < 0) 
+		{
+			if (snd_seq_get_port_subscription(seq, subs) == 0) {
+				printf("Connection from '%s' to '%s' is already subscribed\n", client_name, dest_client_name);
+			}
+			else printf("Connection from '%s' to '%s' failed\n", client_name, dest_client_name);
 		}
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
