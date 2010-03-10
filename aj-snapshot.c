@@ -69,6 +69,7 @@ int main(int argc, char **argv)
 				break;
 				case RESTORE:
 				printf("ALSA RESTORE\n");
+				alsa_restore(seq, filename);
 				break;
 			}
 			break;
