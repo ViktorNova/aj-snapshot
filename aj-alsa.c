@@ -35,14 +35,12 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 	snd_seq_query_subscribe_set_type(subs, SND_SEQ_QUERY_SUBS_READ);
 	snd_seq_query_subscribe_set_index(subs, 0);
 
-	//to get the names of connected clients and ports
+	//to get the names of connected clients
 	snd_seq_client_info_t* connected_cinfo;
 	snd_seq_client_info_alloca(&connected_cinfo);
-	snd_seq_port_info_t* connected_pinfo;
-	snd_seq_port_info_alloca(&connected_pinfo);
 
 	const char* client_name;
-	const char* port_name;
+	char port_id[3];
 
 	while (snd_seq_query_port_subscribers(seq, subs) >= 0)
 	{
@@ -51,14 +49,14 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 
 		snd_seq_get_any_client_info(seq, addr->client, connected_cinfo);
 		client_name = snd_seq_client_info_get_name( connected_cinfo );
-		snd_seq_get_any_port_info(seq, addr->client, addr->port, connected_pinfo);
-		port_name = snd_seq_port_info_get_name( connected_pinfo );
+
+		sprintf(port_id, "%i", addr->port);
 
 		mxml_node_t* connection_node;
 		connection_node = mxmlNewElement(port_node, "connection");
 
 		mxmlElementSetAttr(connection_node, "client", client_name);
-		mxmlElementSetAttr(connection_node, "port", port_name);
+		mxmlElementSetAttr(connection_node, "port", port_id);
 
 		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1);
 	}		
@@ -66,16 +64,19 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 
 void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_port_info_t* pinfo, mxml_node_t* client_node )
 {
-	const char* name;
+	char port_id[3];
+
 	snd_seq_port_info_set_client(pinfo, snd_seq_client_info_get_client(cinfo));
 	snd_seq_port_info_set_port(pinfo, -1);
 
 	while (snd_seq_query_next_port(seq, pinfo) >= 0)
 	{
-		name = snd_seq_port_info_get_name( pinfo );
+		int id = snd_seq_port_info_get_port( pinfo );
+		sprintf(port_id, "%i", id);
+
 		mxml_node_t* port_node;
 		port_node = mxmlNewElement(client_node, "port");
-                mxmlElementSetAttr(port_node, "name", name);	
+                mxmlElementSetAttr(port_node, "id", port_id);	
 
 		alsa_store_connections(seq, snd_seq_port_info_get_addr(pinfo), port_node);
 	}
@@ -123,24 +124,43 @@ void alsa_store( snd_seq_t* seq, const char* filename )
 	fclose(fp);
 }
 
-void alsa_restore_connections( snd_seq_t* seq, const char* client_name, const char* port_name, mxml_node_t* port_node)
+void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port_id, mxml_node_t* port_node)
 {
 	snd_seq_port_subscribe_t* subs;
 	snd_seq_port_subscribe_alloca(&subs);
 
+	snd_seq_addr_t sender, dest;
+
 	mxml_node_t* connection_node;
 
         const char* dest_client_name;
-        const char* dest_port_name;
+        const char* dest_id;
+	int dest_port_id;
 
 	connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
 	
 	while (connection_node)
 	{
 		dest_client_name = mxmlElementGetAttr(connection_node, "client");
-		dest_port_name = mxmlElementGetAttr(connection_node, "port");
+		dest_id = mxmlElementGetAttr(connection_node, "port");
+		dest_port_id = atoi(dest_id);
 
-		printf("%s\t%s\n", dest_client_name, dest_port_name);
+		if (snd_seq_parse_address(seq, &sender, client_name) < 0) {
+			printf("client %s is not active", client_name);
+		}
+		else sender.port = port_id;
+
+		if (snd_seq_parse_address(seq, &dest, dest_client_name) < 0) {
+			printf("client %s is not active", client_name);
+		}
+                else dest.port = dest_port_id;
+
+		snd_seq_port_subscribe_set_sender(subs, &sender);
+		snd_seq_port_subscribe_set_dest(subs, &dest);
+
+		if (snd_seq_subscribe_port(seq, subs) < 0) {
+			printf("connection failed\n");
+		}
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
 	}
@@ -149,16 +169,17 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, const ch
 void alsa_restore_ports( snd_seq_t* seq, const char* client_name, mxml_node_t* client_node)
 {
 	mxml_node_t* port_node;
-	const char* port_name;
+	const char* id;
+	int port_id;
 
 	port_node = mxmlFindElement(client_node, client_node, "port", NULL, NULL, MXML_DESCEND_FIRST);
 
 	while (port_node)
 	{
-		port_name = mxmlElementGetAttr(port_node, "name");
-		printf("%s\n", port_name);
+		id = mxmlElementGetAttr(port_node, "id");
+		port_id = atoi(id);
 
-		alsa_restore_connections(seq, client_name, port_name, port_node);
+		alsa_restore_connections(seq, client_name, port_id, port_node);
 
 		port_node = mxmlFindElement(port_node, client_node, "port", NULL, NULL, MXML_NO_DESCEND);
 	}
@@ -174,7 +195,6 @@ void alsa_restore_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 	while (client_node)
 	{
 		client_name = mxmlElementGetAttr(client_node, "name");
-		printf("%s\n", client_name);
 
 		alsa_restore_ports(seq, client_name, client_node);
 
