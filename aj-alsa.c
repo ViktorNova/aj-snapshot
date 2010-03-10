@@ -21,7 +21,7 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 	}
 	if ( !strcmp(name, "connection") )
 	{
-		if ( where == MXML_WS_BEFORE_OPEN )
+		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 		return ("\n      ");
 	}
 	return NULL;
@@ -38,8 +38,11 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 	//to get the names of connected clients and ports
 	snd_seq_client_info_t* connected_cinfo;
 	snd_seq_client_info_alloca(&connected_cinfo);
+	snd_seq_port_info_t* connected_pinfo;
+	snd_seq_port_info_alloca(&connected_pinfo);
 
 	const char* client_name;
+	const char* port_name;
 
 	while (snd_seq_query_port_subscribers(seq, subs) >= 0)
 	{
@@ -48,12 +51,14 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 
 		snd_seq_get_any_client_info(seq, addr->client, connected_cinfo);
 		client_name = snd_seq_client_info_get_name( connected_cinfo );
+		snd_seq_get_any_port_info(seq, addr->client, addr->port, connected_pinfo);
+		port_name = snd_seq_port_info_get_name( connected_pinfo );
 
 		mxml_node_t* connection_node;
 		connection_node = mxmlNewElement(port_node, "connection");
 
 		mxmlElementSetAttr(connection_node, "client", client_name);
-		mxmlNewInteger(connection_node, addr->port);
+		mxmlElementSetAttr(connection_node, "port", port_name);
 
 		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1);
 	}		
@@ -139,6 +144,8 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, const ch
 
 		printf("%s\t%s\n", dest_client_name, dest_port_name);
 
+		
+		
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
 	}
 }
