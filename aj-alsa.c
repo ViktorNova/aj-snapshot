@@ -4,25 +4,21 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where)
 {
 	const char *name;
 	name = node->value.element.name;
-	if ( !strcmp(name, "alsa") || !strcmp(name, "jack") )
+
+	if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 	{
-		if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		if ( !strcmp(name, "alsa") || !strcmp(name, "jack") ){
 		return ("\n");
-	}
-	if ( !strcmp(name, "client") )
-	{
-		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		}
+		if ( !strcmp(name, "client") ){
 		return ("\n  ");
-	}
-	if ( !strcmp(name, "port") )
-	{
-		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		}
+		if ( !strcmp(name, "port") ){
 		return ("\n    ");
-	}
-	if ( !strcmp(name, "connection") )
-	{
-		if ( where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
+		}
+		if ( !strcmp(name, "connection") ){
 		return ("\n      ");
+		}
 	}
 	return NULL;
 }
@@ -35,44 +31,57 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 	snd_seq_query_subscribe_set_type(subs, SND_SEQ_QUERY_SUBS_READ);
 	snd_seq_query_subscribe_set_index(subs, 0);
 
-	//to get the names of connected clients
-	snd_seq_client_info_t* connected_cinfo;
+	snd_seq_client_info_t* connected_cinfo; //to get the names of connected clients
 	snd_seq_client_info_alloca(&connected_cinfo);
+	snd_seq_port_info_t* connected_pinfo; //to get port capabilities of connected clients
+	snd_seq_port_info_alloca(&connected_pinfo);
 
 	const char* client_name;
 	char port_id[3];
+	unsigned int caps = SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE;
 
-	while (snd_seq_query_port_subscribers(seq, subs) >= 0)
+	for (; snd_seq_query_port_subscribers(seq, subs) >= 0; 
+		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1) )
 	{
-		const snd_seq_addr_t *addr;
-		addr = snd_seq_query_subscribe_get_addr(subs);
+		const snd_seq_addr_t *dest = snd_seq_query_subscribe_get_addr(subs);
 
-		snd_seq_get_any_client_info(seq, addr->client, connected_cinfo);
-		client_name = snd_seq_client_info_get_name( connected_cinfo );
+		snd_seq_get_any_port_info(seq, dest->client, dest->port, connected_pinfo);
 
-		sprintf(port_id, "%i", addr->port);
+		if ((snd_seq_port_info_get_capability(connected_pinfo) & caps) != caps)
+                continue;
+		if (snd_seq_port_info_get_capability(connected_pinfo) & SND_SEQ_PORT_CAP_NO_EXPORT)
+                continue;
+
+		snd_seq_get_any_client_info(seq, dest->client, connected_cinfo);
+		client_name = snd_seq_client_info_get_name(connected_cinfo);
+
+		snprintf(port_id, 3, "%i", dest->port);
 
 		mxml_node_t* connection_node;
 		connection_node = mxmlNewElement(port_node, "connection");
 
 		mxmlElementSetAttr(connection_node, "client", client_name);
 		mxmlElementSetAttr(connection_node, "port", port_id);
-
-		snd_seq_query_subscribe_set_index(subs, snd_seq_query_subscribe_get_index(subs) + 1);
 	}		
 }
 
 void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_port_info_t* pinfo, mxml_node_t* client_node )
 {
 	char port_id[3];
+	unsigned int caps = SND_SEQ_PORT_CAP_READ|SND_SEQ_PORT_CAP_SUBS_READ;
 
 	snd_seq_port_info_set_client(pinfo, snd_seq_client_info_get_client(cinfo));
 	snd_seq_port_info_set_port(pinfo, -1);
 
 	while (snd_seq_query_next_port(seq, pinfo) >= 0)
 	{
+		if ((snd_seq_port_info_get_capability(pinfo) & caps) != caps)
+                continue;
+		if (snd_seq_port_info_get_capability(pinfo) & SND_SEQ_PORT_CAP_NO_EXPORT)
+                continue;
+
 		int id = snd_seq_port_info_get_port( pinfo );
-		sprintf(port_id, "%i", id);
+		snprintf(port_id, 3, "%i", id);
 
 		mxml_node_t* port_node;
 		port_node = mxmlNewElement(client_node, "port");
@@ -95,6 +104,9 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 
 	while (snd_seq_query_next_client(seq, cinfo) >= 0) 
 	{
+		if(snd_seq_client_info_get_num_ports(cinfo) == 0)
+		continue;
+
 		name = snd_seq_client_info_get_name(cinfo);
 
 		mxml_node_t* client_node;
@@ -128,43 +140,43 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 {
 	snd_seq_port_subscribe_t* subs;
 	snd_seq_port_subscribe_alloca(&subs);
-
 	snd_seq_addr_t sender, dest;
-
 	mxml_node_t* connection_node;
-
         const char* dest_client_name;
         const char* dest_id;
 	int dest_port_id;
 
 	connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
 	
-	while (connection_node)
-	{
+	while (connection_node){
 		dest_client_name = mxmlElementGetAttr(connection_node, "client");
 		dest_id = mxmlElementGetAttr(connection_node, "port");
 		dest_port_id = atoi(dest_id);
 
-		if (snd_seq_parse_address(seq, &sender, client_name) < 0) {
-			printf("client %s is not active\n", client_name);
-		}
-		else sender.port = port_id;
-
-		if (snd_seq_parse_address(seq, &dest, dest_client_name) < 0) {
-			printf("client %s is not active\n", client_name);
-		}
-                else dest.port = dest_port_id;
-
-		snd_seq_port_subscribe_set_sender(subs, &sender);
-		snd_seq_port_subscribe_set_dest(subs, &dest);
-
-		if (snd_seq_subscribe_port(seq, subs) < 0) 
-		{
-			if (snd_seq_get_port_subscription(seq, subs) == 0) {
-				printf("Connection from '%s' to '%s' is already subscribed\n", client_name, dest_client_name);
+		if (snd_seq_parse_address(seq, &sender, client_name) >= 0) {
+			sender.port = port_id;
+			if (snd_seq_parse_address(seq, &dest, dest_client_name) >= 0) {
+				dest.port = dest_port_id;
+				snd_seq_port_subscribe_set_sender(subs, &sender);
+				snd_seq_port_subscribe_set_dest(subs, &dest);
+				if (snd_seq_subscribe_port(seq, subs) >= 0) {
+					fprintf(stdout, "Connecting client '%s':%i to '%s':%i\n", 
+						client_name, port_id, dest_client_name, dest_port_id);
+				}
+				else {
+					if (snd_seq_get_port_subscription(seq, subs) == 0) {
+                                        	fprintf(stderr, "Connection from '%s' to '%s' is already subscribed\n", 
+							client_name, dest_client_name);
+                                        }
+                                        else fprintf(stderr, "Connection from '%s' to '%s' failed\n", 
+							client_name, dest_client_name);
+				}
 			}
-			else printf("Connection from '%s' to '%s' failed\n", client_name, dest_client_name);
+                	else fprintf(stderr, "Client %s is not active, so failed to subscribe from %s\n", 
+					dest_client_name, client_name);
 		}
+		else fprintf(stderr, "Client %s is not active, so failed to subscribe to %s\n", 
+				client_name, dest_client_name);
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
 	}
