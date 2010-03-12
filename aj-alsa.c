@@ -1,27 +1,5 @@
 #include "aj-snapshot.h"
 
-const char* xml_whitespace_cb( mxml_node_t *node, int where)
-{
-	const char *name;
-	name = node->value.element.name;
-
-	if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
-	{
-		if ( !strcmp(name, "alsa") || !strcmp(name, "jack") ){
-		return ("\n");
-		}
-		if ( !strcmp(name, "client") ){
-		return ("\n  ");
-		}
-		if ( !strcmp(name, "port") ){
-		return ("\n    ");
-		}
-		if ( !strcmp(name, "connection") ){
-		return ("\n      ");
-		}
-	}
-	return NULL;
-}
 
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {
@@ -117,23 +95,14 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 	}
 }
 
-void alsa_store( snd_seq_t* seq, const char* filename )
+void alsa_store( snd_seq_t* seq, mxml_node_t* xml_node )
 {
-	mxml_node_t* xml_node;
 	mxml_node_t* alsa_node;
 
-	xml_node = mxmlNewXML("1.0");
 	alsa_node = mxmlNewElement(xml_node, "alsa");
 
 	alsa_store_clients( seq, alsa_node );
 
-	FILE *fp;
-	if( (fp = fopen(filename, "w")) == NULL ){
-		perror("Could not open file");
-		exit(1);
-	}
-	mxmlSaveFile(xml_node, fp, xml_whitespace_cb);
-	fclose(fp);
 }
 
 void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port_id, mxml_node_t* port_node)
@@ -218,23 +187,13 @@ void alsa_restore_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 	}
 }
 
-void alsa_restore( snd_seq_t* seq, const char* filename )
+void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node )
 {
-	mxml_node_t* xml_node;
 	mxml_node_t* alsa_node;
-	FILE *fp;
 
-	if( (fp = fopen(filename, "r")) == NULL ){
-		perror("Could not open file");
-		exit(1);
-	}
-
-	xml_node = mxmlLoadFile(NULL, fp, MXML_TEXT_CALLBACK);
 	alsa_node = mxmlFindElement(xml_node, xml_node, "alsa", NULL, NULL, MXML_DESCEND_FIRST);
 
 	alsa_restore_clients( seq, alsa_node );
-
-	fclose(fp);
 }
 
 snd_seq_t* alsa_initialize( snd_seq_t* seq )

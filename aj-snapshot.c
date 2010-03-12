@@ -1,5 +1,7 @@
 #include "aj-snapshot.h"
 #include "aj-alsa.h"
+#include "aj-file.h"
+#include "aj-jack.h"
 
 static void usage(void)
 {
@@ -27,7 +29,9 @@ int main(int argc, char **argv)
 	enum sys system = ALSA_JACK;
 	enum act action = STORE;
 	static const char *filename;
+	mxml_node_t* xml_node = NULL;
 	snd_seq_t* seq = NULL;
+	jack_client_t* jackc = NULL;
 
 	while ((c = getopt_long(argc, argv, "ajrf:", long_option, NULL)) != -1) {
 
@@ -64,38 +68,42 @@ int main(int argc, char **argv)
 			//printf("id = %d", snd_seq_client_id(seq));
 			switch (action){
 				case STORE:
-				printf("ALSA STORE\n");
-				alsa_store(seq, filename);
-				break;
+					printf("ALSA STORE\n");
+					xml_node = mxmlNewXML("1.0");
+					alsa_store(seq, xml_node);
+					write_xml(filename, xml_node);
+					break;
 				case RESTORE:
-				printf("ALSA RESTORE\n");
-				alsa_restore(seq, filename);
-				break;
+					printf("ALSA RESTORE\n");
+					xml_node = read_xml(filename, xml_node);
+					alsa_restore(seq, xml_node);
+					break;
 			}
+			snd_seq_close(seq);
 			break;
 		case JACK:
+			jackc = jack_initialize(jackc);
 			switch (action){
 				case STORE:
-				printf("JACK STORE\n");
-				break;
+					printf("JACK STORE\n");
+					break;
 				case RESTORE:
-				printf("JACK RESTORE\n");
-				break;
+					printf("JACK RESTORE\n");
+					break;
 			}
 			break;
 		case ALSA_JACK:
 			switch (action){
 				case STORE:
-				printf("ALSA STORE\n");
-				printf("JACK STORE\n");
-				break;
+					printf("ALSA STORE\n");
+					printf("JACK STORE\n");
+					break;
 				case RESTORE:
-				printf("ALSA RESTORE\n");
-				printf("JACK RESTORE\n");
-				break;
+					printf("ALSA RESTORE\n");
+					printf("JACK RESTORE\n");
+					break;
 			}
 			break;
 	}
-	//snd_seq_close(seq);
 	return 0;
 }
