@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <getopt.h>
+#include <string.h>
 #include <alsa/asoundlib.h>
 #include <jack/jack.h>
 #include <mxml.h>

@@ -86,12 +86,16 @@ int main(int argc, char **argv)
 			switch (action){
 				case STORE:
 					printf("JACK STORE\n");
+					xml_node = mxmlNewXML("1.0");
+					jack_store(jackc, xml_node);
+					write_xml(filename, xml_node);
 					break;
 				case RESTORE:
 					printf("JACK RESTORE\n");
 					break;
 			}
 			break;
+			jack_client_close(jackc);
 		case ALSA_JACK:
 			switch (action){
 				case STORE:
