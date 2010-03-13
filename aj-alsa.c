@@ -129,15 +129,15 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 				snd_seq_port_subscribe_set_sender(subs, &sender);
 				snd_seq_port_subscribe_set_dest(subs, &dest);
 				if (snd_seq_subscribe_port(seq, subs) >= 0) {
-					fprintf(stdout, "Connecting client '%s':%i to '%s':%i\n", 
+					fprintf(stdout, "Connecting port '%s':%i to '%s':%i\n", 
 						client_name, port_id, dest_client_name, dest_port_id);
 				}
 				else {
 					if (snd_seq_get_port_subscription(seq, subs) == 0) {
-                                        	fprintf(stderr, "Connection from '%s' to '%s' is already subscribed\n", 
+                                        	fprintf(stderr, "Port '%s' is already connected to '%s'\n", 
 							client_name, dest_client_name);
                                         }
-                                        else fprintf(stderr, "Connection from '%s' to '%s' failed\n", 
+                                        else fprintf(stderr, "Connection from '%s' to '%s' failed!\n", 
 							client_name, dest_client_name);
 				}
 			}

@@ -11,6 +11,78 @@ jack_client_t* jack_initialize( jack_client_t* jackc )
 	return jackc;
 }
 
+void jack_restore_connections( jack_client_t* jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
+{
+	mxml_node_t* connection_node;
+	const char* dest_port;
+	unsigned int s = strlen(client_name) + strlen(port_name) + 2;
+	char src_port[s];
+
+	snprintf(src_port, s, "%s:%s", client_name, port_name);
+
+	connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
+
+	while (connection_node)
+	{
+		dest_port = mxmlElementGetAttr(connection_node, "port");
+
+		int err = jack_connect(jackc, src_port, dest_port);
+
+		if (err == 0) {
+			fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
+		}
+		else if (err == EEXIST) {
+			fprintf(stderr, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+		}
+		else {
+			fprintf(stderr, "Connection from '%s' to '%s' failed!\n", src_port, dest_port);	
+		}
+
+		connection_node = mxmlFindElement(connection_node, port_node, "port", NULL, NULL, MXML_NO_DESCEND);
+	}
+}
+
+void jack_restore_ports( jack_client_t* jackc, const char* client_name, mxml_node_t* client_node)
+{
+	mxml_node_t* port_node;
+	const char* port_name;
+
+	port_node = mxmlFindElement(client_node, client_node, "port", NULL, NULL, MXML_DESCEND_FIRST);
+
+	while (port_node)
+	{
+		port_name = mxmlElementGetAttr(port_node, "name");
+
+		jack_restore_connections(jackc, client_name, port_name, port_node);
+
+		port_node = mxmlFindElement(port_node, client_node, "port", NULL, NULL, MXML_NO_DESCEND);
+	}
+}
+
+void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
+{
+	mxml_node_t* client_node;
+	const char* client_name;
+
+	client_node = mxmlFindElement(jack_node, jack_node, "client", NULL, NULL, MXML_DESCEND_FIRST);
+
+	while (client_node)
+	{
+		client_name = mxmlElementGetAttr(client_node, "name");
+
+		jack_restore_ports(jackc, client_name, client_node);
+
+		client_node = mxmlFindElement(client_node, jack_node, "client", NULL, NULL, MXML_NO_DESCEND);
+	}
+}
+
+void jack_restore( jack_client_t* jackc, mxml_node_t* xml_node )
+{
+	mxml_node_t* jack_node;
+	jack_node = mxmlFindElement(xml_node, xml_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
+	jack_restore_clients(jackc, jack_node);
+}
+
 void jack_store_connections( jack_client_t* jackc, const char* port_name, mxml_node_t* port_node )
 {
 

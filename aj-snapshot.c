@@ -65,18 +65,17 @@ int main(int argc, char **argv)
 	switch (system) {
 		case ALSA:
 			seq = alsa_initialize(seq);
-			//printf("id = %d", snd_seq_client_id(seq));
 			switch (action){
 				case STORE:
-					printf("ALSA STORE\n");
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					write_xml(filename, xml_node);
+					fprintf(stdout, "ALSA connections stored!\n");
 					break;
 				case RESTORE:
-					printf("ALSA RESTORE\n");
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
+					fprintf(stdout, "ALSA connections restored!\n");
 					break;
 			}
 			snd_seq_close(seq);
@@ -85,28 +84,43 @@ int main(int argc, char **argv)
 			jackc = jack_initialize(jackc);
 			switch (action){
 				case STORE:
-					printf("JACK STORE\n");
 					xml_node = mxmlNewXML("1.0");
 					jack_store(jackc, xml_node);
 					write_xml(filename, xml_node);
+					mxmlDelete(xml_node);
+					fprintf(stdout, "JACK connections stored!\n");
 					break;
 				case RESTORE:
-					printf("JACK RESTORE\n");
+					xml_node = read_xml(filename, xml_node);
+					jack_restore(jackc, xml_node);
+					mxmlDelete(xml_node);
+					fprintf(stdout, "JACK connections restored!\n");
 					break;
 			}
 			break;
 			jack_client_close(jackc);
 		case ALSA_JACK:
+			seq = alsa_initialize(seq);
+			jackc = jack_initialize(jackc);
 			switch (action){
 				case STORE:
-					printf("ALSA STORE\n");
-					printf("JACK STORE\n");
+					xml_node = mxmlNewXML("1.0");
+					alsa_store(seq, xml_node);
+					jack_store(jackc, xml_node);
+					write_xml(filename, xml_node);
+					mxmlDelete(xml_node);
+					fprintf(stdout, "ALSA & JACK connections stored!\n");
 					break;
 				case RESTORE:
-					printf("ALSA RESTORE\n");
-					printf("JACK RESTORE\n");
+					xml_node = read_xml(filename, xml_node);
+					alsa_restore(seq, xml_node);
+					jack_restore(jackc, xml_node);
+					mxmlDelete(xml_node);
+					fprintf(stdout, "ALSA & JACK connections restored!\n");
 					break;
 			}
+			snd_seq_close(seq);
+			jack_client_close(jackc);
 			break;
 	}
 	return 0;
