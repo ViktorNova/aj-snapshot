@@ -72,13 +72,13 @@ int main(int argc, char **argv)
 			seq = alsa_initialize(seq);
 			switch (action){
 				case STORE:
-					if(remove_connections) alsa_remove_connections(seq);
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					write_xml(filename, xml_node);
 					fprintf(stdout, "ALSA connections stored!\n");
 					break;
 				case RESTORE:
+					if(remove_connections) alsa_remove_connections(seq);
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
 					fprintf(stdout, "ALSA connections restored!\n");
