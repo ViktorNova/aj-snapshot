@@ -27,6 +27,7 @@ static const struct option long_option[] = {
 int main(int argc, char **argv)
 { 
 	int c;
+	int try_remove = 0;
 	int remove_connections = 0;
 	enum sys system = ALSA_JACK;
 	enum act action = STORE;
@@ -49,13 +50,16 @@ int main(int argc, char **argv)
 			action = RESTORE;
 			break;
 		case 'x':
-			remove_connections = 1;
+			try_remove = 1;
 			break;
 		default:
 			usage();
 			return 1;
 		}
 	}
+
+	if(try_remove && (action == RESTORE)) remove_connections = 1;
+	else fprintf(stderr, "Can only remove connections when restoring connections\n");
 
 	if (argc == (optind + 1)) {
 		filename = argv[optind];
@@ -79,8 +83,8 @@ int main(int argc, char **argv)
 					break;
 				case RESTORE:
 					if(remove_connections){
+						fprintf(stdout, "Removing all ALSA connections\n");
 						alsa_remove_connections(seq);
-						fprintf(stdout, "Removed all connections");
 					}
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
@@ -100,6 +104,10 @@ int main(int argc, char **argv)
 					fprintf(stdout, "JACK connections stored!\n");
 					break;
 				case RESTORE:
+					if(remove_connections){
+                                                fprintf(stdout, "Removing all JACK connections\n");
+                                                jack_remove_connections(jackc);
+                                        }
 					xml_node = read_xml(filename, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
@@ -121,6 +129,11 @@ int main(int argc, char **argv)
 					fprintf(stdout, "ALSA & JACK connections stored!\n");
 					break;
 				case RESTORE:
+					if(remove_connections){
+                                                fprintf(stdout, "Removing all ALSA & JACK connections\n");
+						alsa_remove_connections(seq);
+                                                jack_remove_connections(jackc);
+                                        }
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
 					jack_restore(jackc, xml_node);

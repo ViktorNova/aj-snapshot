@@ -38,21 +38,34 @@ void alsa_remove_connection(snd_seq_t* seq, snd_seq_port_info_t* pinfo)
 
 void alsa_remove_connections(snd_seq_t *seq)
 {
-        snd_seq_client_info_t *cinfo;
-        snd_seq_client_info_alloca(&cinfo);
-        snd_seq_port_info_t *pinfo;
-        snd_seq_port_info_alloca(&pinfo);
+	snd_seq_client_info_t *cinfo;
+	snd_seq_client_info_alloca(&cinfo);
+	snd_seq_port_info_t *pinfo;
+	snd_seq_port_info_alloca(&pinfo);
+	snd_seq_client_info_set_client(cinfo, -1);
 
-        snd_seq_client_info_set_client(cinfo, -1);
+	while (snd_seq_query_next_client(seq, cinfo) >= 0) 
+	{
+		snd_seq_port_info_set_client(pinfo, snd_seq_client_info_get_client(cinfo));
+		snd_seq_port_info_set_port(pinfo, -1);
 
-        while (snd_seq_query_next_client(seq, cinfo) >= 0) {
-                snd_seq_port_info_set_client(pinfo, snd_seq_client_info_get_client(cinfo));
-                snd_seq_port_info_set_port(pinfo, -1);
+		while (snd_seq_query_next_port(seq, pinfo) >= 0)
+		{
+			alsa_remove_connection(seq, pinfo);
+		}
+	}
+}
 
-                while (snd_seq_query_next_port(seq, pinfo) >= 0)
-                {
-                        alsa_remove_connection(seq, pinfo);
-                }
-        }
+void jack_remove_connections(jack_client_t* jackc)
+{
+	const char **jack_output_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsOutput);
+	const char **jack_input_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsInput);
+	unsigned int i , j;
+
+	for (i = 0; jack_output_ports[i] != NULL; ++i) {
+		for (j = 0; jack_input_ports[j] != NULL; ++j) {
+			jack_disconnect(jackc, jack_output_ports[i], jack_input_ports[j]);
+		}
+	}
 }
 
