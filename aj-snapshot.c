@@ -78,7 +78,10 @@ int main(int argc, char **argv)
 					fprintf(stdout, "ALSA connections stored!\n");
 					break;
 				case RESTORE:
-					if(remove_connections) alsa_remove_connections(seq);
+					if(remove_connections){
+						alsa_remove_connections(seq);
+						fprintf(stdout, "Removed all connections");
+					}
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
 					fprintf(stdout, "ALSA connections restored!\n");
