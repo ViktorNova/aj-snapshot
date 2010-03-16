@@ -2,6 +2,7 @@
 #include "aj-alsa.h"
 #include "aj-file.h"
 #include "aj-jack.h"
+#include "aj-remove.h"
 
 static void usage(void)
 {
@@ -20,12 +21,13 @@ static const struct option long_option[] = {
 	{"alsa", 0, NULL, 'a'},
 	{"jack", 0, NULL, 'j'},
 	{"restore", 0, NULL, 'r'},
-	{"file", 1, NULL, 'f'},
+	{"remove-connections", 0, NULL, 'x'},
 };
 
 int main(int argc, char **argv)
 { 
 	int c;
+	int remove_connections = 0;
 	enum sys system = ALSA_JACK;
 	enum act action = STORE;
 	static const char *filename;
@@ -33,7 +35,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrf:", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrx", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -45,6 +47,9 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			action = RESTORE;
+			break;
+		case 'x':
+			remove_connections = 1;
 			break;
 		default:
 			usage();
@@ -67,6 +72,7 @@ int main(int argc, char **argv)
 			seq = alsa_initialize(seq);
 			switch (action){
 				case STORE:
+					if(remove_connections) alsa_remove_connections(seq);
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					write_xml(filename, xml_node);

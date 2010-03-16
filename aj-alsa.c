@@ -1,6 +1,5 @@
 #include "aj-snapshot.h"
 
-
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {
 	snd_seq_query_subscribe_t *subs;
@@ -26,9 +25,9 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 		snd_seq_get_any_port_info(seq, dest->client, dest->port, connected_pinfo);
 
 		if ((snd_seq_port_info_get_capability(connected_pinfo) & caps) != caps)
-                continue;
+			continue;
 		if (snd_seq_port_info_get_capability(connected_pinfo) & SND_SEQ_PORT_CAP_NO_EXPORT)
-                continue;
+			continue;
 
 		snd_seq_get_any_client_info(seq, dest->client, connected_cinfo);
 		client_name = snd_seq_client_info_get_name(connected_cinfo);
@@ -54,16 +53,16 @@ void alsa_store_ports( snd_seq_t* seq, snd_seq_client_info_t* cinfo, snd_seq_por
 	while (snd_seq_query_next_port(seq, pinfo) >= 0)
 	{
 		if ((snd_seq_port_info_get_capability(pinfo) & caps) != caps)
-                continue;
+			continue;
 		if (snd_seq_port_info_get_capability(pinfo) & SND_SEQ_PORT_CAP_NO_EXPORT)
-                continue;
+			continue;
 
 		int id = snd_seq_port_info_get_port( pinfo );
 		snprintf(port_id, 3, "%i", id);
 
 		mxml_node_t* port_node;
 		port_node = mxmlNewElement(client_node, "port");
-                mxmlElementSetAttr(port_node, "id", port_id);	
+		mxmlElementSetAttr(port_node, "id", port_id);	
 
 		alsa_store_connections(seq, snd_seq_port_info_get_addr(pinfo), port_node);
 	}
@@ -111,8 +110,8 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 	snd_seq_port_subscribe_alloca(&subs);
 	snd_seq_addr_t sender, dest;
 	mxml_node_t* connection_node;
-        const char* dest_client_name;
-        const char* dest_id;
+	const char* dest_client_name;
+	const char* dest_id;
 	int dest_port_id;
 
 	connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
@@ -134,14 +133,14 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 				}
 				else {
 					if (snd_seq_get_port_subscription(seq, subs) == 0) {
-                                        	fprintf(stderr, "Port '%s' is already connected to '%s'\n", 
+						fprintf(stderr, "Port '%s' is already connected to '%s'\n", 
 							client_name, dest_client_name);
-                                        }
-                                        else fprintf(stderr, "Connection from '%s' to '%s' failed!\n", 
+					}
+					else fprintf(stderr, "Connection from '%s' to '%s' failed!\n", 
 							client_name, dest_client_name);
 				}
 			}
-                	else fprintf(stderr, "Client %s is not active, so failed to subscribe from %s\n", 
+			else fprintf(stderr, "Client %s is not active, so failed to subscribe from %s\n", 
 					dest_client_name, client_name);
 		}
 		else fprintf(stderr, "Client %s is not active, so failed to subscribe to %s\n", 
@@ -198,23 +197,23 @@ void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node )
 
 snd_seq_t* alsa_initialize( snd_seq_t* seq )
 {
-        int client;
+	int client;
 
-        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
-                fprintf(stderr, "can't open sequencer\n");
-                exit(1);
-        }
+	if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
+		fprintf(stderr, "can't open sequencer\n");
+		exit(1);
+	}
 
-        if ((client = snd_seq_client_id(seq)) < 0) {
-                snd_seq_close(seq);
-                fprintf(stderr, "can't get client id\n");
-                exit(1);
-        }
+	if ((client = snd_seq_client_id(seq)) < 0) {
+		snd_seq_close(seq);
+		fprintf(stderr, "can't get client id\n");
+		exit(1);
+	}
 
-        if (snd_seq_set_client_name(seq, "aj-connect") < 0) {
-                snd_seq_close(seq);
-                fprintf(stderr, "can't set client info\n");
-                exit(1);
-        }
+	if (snd_seq_set_client_name(seq, "aj-connect") < 0) {
+		snd_seq_close(seq);
+		fprintf(stderr, "can't set client info\n");
+		exit(1);
+	}
 	return seq;
 }
