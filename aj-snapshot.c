@@ -6,7 +6,16 @@
 
 static void usage(void)
 {
-	printf("aj-snapshot\n");
+	fprintf(stdout, "aj-snapshot\n");
+	fprintf(stdout, "store/restore JACK and/or ALSA midi connections to/from an xml file\n");
+	fprintf(stdout, "without options -a or -j, all actions will apply to both ALSA and JACK connections\n");
+	fprintf(stdout, "Copyright (C) 2010 Lieven Moors\n");
+	fprintf(stdout, "Usage: aj-snapshot [-options] [file]\n");
+	fprintf(stdout, "  -a,--alsa     only store/restore ALSA midi connections\n");
+	fprintf(stdout, "  -j,--jack     only store/restore JACK audio and midi connections\n");
+	fprintf(stdout, "  -r,--restore  restore ALSA and/or JACK connections\n");
+	fprintf(stdout, "  -x,--remove   with -r and 'file': remove ALSA and/or JACK connections before restoring them\n");
+	fprintf(stdout, "  -x,--remove   without 'file': only remove ALSA and/or JACK connections\n");
 } 
 
 enum sys {
@@ -14,7 +23,7 @@ enum sys {
 };
 
 enum act {
-	STORE, RESTORE
+	STORE, RESTORE, REMOVE_ONLY
 };
 
 static const struct option long_option[] = {
@@ -58,22 +67,39 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(try_remove && (action == RESTORE)) remove_connections = 1;
-	else fprintf(stderr, "Can only remove connections when restoring connections\n");
-
 	if (argc == (optind + 1)) {
 		filename = argv[optind];
 	}
+	else if ((argc == optind) && try_remove){
+		action = REMOVE_ONLY;
+	}
 	else {
-		fprintf(stderr, "Please specify one file to store/restore the snapshot\n");
+		fprintf(stderr, "-----------------------------------------------------\n");
+		fprintf(stderr, "Please specify one file to store/restore the snapshot,\n");
+		fprintf(stderr, "or use option -x to remove connections only\n");
+		fprintf(stderr, "-----------------------------------------------------\n");
+		usage();
 		return 1;
 	}
-
 	
+	if(try_remove){
+		if (action != STORE){
+			remove_connections = 1;
+		}
+		else {
+			fprintf(stderr, "------------------------------------------------------\n");
+			fprintf(stderr, "Will not remove connections before storing connections\n");
+			fprintf(stderr, "------------------------------------------------------\n");
+		}
+	}
 
 	switch (system) {
 		case ALSA:
 			seq = alsa_initialize(seq);
+			if(remove_connections){
+				alsa_remove_connections(seq);
+				fprintf(stdout, "all ALSA connections removed!\n");
+			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
@@ -82,19 +108,21 @@ int main(int argc, char **argv)
 					fprintf(stdout, "ALSA connections stored!\n");
 					break;
 				case RESTORE:
-					if(remove_connections){
-						fprintf(stdout, "Removing all ALSA connections\n");
-						alsa_remove_connections(seq);
-					}
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
 					fprintf(stdout, "ALSA connections restored!\n");
+					break;
+				case REMOVE_ONLY:
 					break;
 			}
 			snd_seq_close(seq);
 			break;
 		case JACK:
 			jackc = jack_initialize(jackc);
+			if(remove_connections){
+				jack_remove_connections(jackc);
+				fprintf(stdout, "all JACK connections removed!\n");
+			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
@@ -104,14 +132,12 @@ int main(int argc, char **argv)
 					fprintf(stdout, "JACK connections stored!\n");
 					break;
 				case RESTORE:
-					if(remove_connections){
-                                                fprintf(stdout, "Removing all JACK connections\n");
-                                                jack_remove_connections(jackc);
-                                        }
 					xml_node = read_xml(filename, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
 					fprintf(stdout, "JACK connections restored!\n");
+					break;
+				case REMOVE_ONLY:
 					break;
 			}
 			break;
@@ -119,6 +145,11 @@ int main(int argc, char **argv)
 		case ALSA_JACK:
 			seq = alsa_initialize(seq);
 			jackc = jack_initialize(jackc);
+			if(remove_connections){
+				alsa_remove_connections(seq);
+				jack_remove_connections(jackc);
+				fprintf(stdout, "all ALSA & JACK connections removed!\n");
+			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
@@ -129,16 +160,13 @@ int main(int argc, char **argv)
 					fprintf(stdout, "ALSA & JACK connections stored!\n");
 					break;
 				case RESTORE:
-					if(remove_connections){
-                                                fprintf(stdout, "Removing all ALSA & JACK connections\n");
-						alsa_remove_connections(seq);
-                                                jack_remove_connections(jackc);
-                                        }
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
 					fprintf(stdout, "ALSA & JACK connections restored!\n");
+					break;
+				case REMOVE_ONLY:
 					break;
 			}
 			snd_seq_close(seq);
