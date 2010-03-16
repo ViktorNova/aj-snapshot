@@ -6,9 +6,7 @@ void alsa_remove_connection(snd_seq_t* seq, snd_seq_port_info_t* pinfo)
 	snd_seq_query_subscribe_alloca(&query);
 	snd_seq_query_subscribe_set_root(query, snd_seq_port_info_get_addr(pinfo));
 	snd_seq_query_subscribe_set_type(query, SND_SEQ_QUERY_SUBS_READ);
-
-	int i = 0;
-	snd_seq_query_subscribe_set_index(query, i);
+	snd_seq_query_subscribe_set_index(query, 0);
 
 	while(snd_seq_query_port_subscribers(seq, query) == 0)
 	{
@@ -33,7 +31,7 @@ void alsa_remove_connection(snd_seq_t* seq, snd_seq_port_info_t* pinfo)
 		snd_seq_port_subscribe_set_dest(subs, dest);
 
 		if(snd_seq_unsubscribe_port(seq, subs) < 0){
-			snd_seq_query_subscribe_set_index(query, ++i);
+			snd_seq_query_subscribe_set_index(query, snd_seq_query_subscribe_get_index(query) + 1);
 		}
 	}
 }
