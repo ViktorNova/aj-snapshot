@@ -6,16 +6,20 @@
 
 static void usage(void)
 {
-	fprintf(stdout, "aj-snapshot\n");
-	fprintf(stdout, "store/restore JACK and/or ALSA midi connections to/from an xml file\n");
-	fprintf(stdout, "without options -a or -j, all actions will apply to both ALSA and JACK connections\n");
-	fprintf(stdout, "Copyright (C) 2010 Lieven Moors\n");
-	fprintf(stdout, "Usage: aj-snapshot [-options] [file]\n");
-	fprintf(stdout, "  -a,--alsa     only store/restore ALSA midi connections\n");
-	fprintf(stdout, "  -j,--jack     only store/restore JACK audio and midi connections\n");
-	fprintf(stdout, "  -r,--restore  restore ALSA and/or JACK connections\n");
-	fprintf(stdout, "  -x,--remove   with -r and 'file': remove ALSA and/or JACK connections before restoring them\n");
-	fprintf(stdout, "  -x,--remove   without 'file': only remove ALSA and/or JACK connections\n");
+	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "  aj-snapshot: Store/restore JACK and/or ALSA midi connections to/from an xml file     \n");
+	fprintf(stdout, "               Copyright (C) 2010 Lieven Moors                                         \n");
+	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "   Without options -a or -j, all actions apply to both ALSA and JACK connections       \n");
+	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "   Usage: aj-snapshot [-options] [file]                                                \n");
+	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "   -a,--alsa     only store/restore ALSA midi connections                              \n");
+	fprintf(stdout, "   -j,--jack     only store/restore JACK audio and midi connections                    \n");
+	fprintf(stdout, "   -r,--restore  restore ALSA and/or JACK connections                                  \n");
+	fprintf(stdout, "   -x,--remove   with 'file': remove all ALSA and/or JACK connections before restoring \n");
+	fprintf(stdout, "   -x,--remove   without 'file': only remove ALSA and/or JACK connections              \n");
+	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
 } 
 
 enum sys {
@@ -27,6 +31,7 @@ enum act {
 };
 
 static const struct option long_option[] = {
+	{"help", 0, NULL, 'h'},
 	{"alsa", 0, NULL, 'a'},
 	{"jack", 0, NULL, 'j'},
 	{"restore", 0, NULL, 'r'},
@@ -45,7 +50,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrx", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrxh", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -61,6 +66,9 @@ int main(int argc, char **argv)
 		case 'x':
 			try_remove = 1;
 			break;
+		case 'h':
+			usage();
+			return 1;
 		default:
 			usage();
 			return 1;
