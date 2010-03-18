@@ -54,7 +54,7 @@ static const struct option long_option[] = {
 	{"alsa", 0, NULL, 'a'},
 	{"jack", 0, NULL, 'j'},
 	{"restore", 0, NULL, 'r'},
-	{"remove-connections", 0, NULL, 'x'},
+	{"remove", 0, NULL, 'x'},
 };
 
 int main(int argc, char **argv)

@@ -1,0 +1,68 @@
+aj-snapshot is a command line utility to store/restore all ALSA 
+and/or JACK connections to/from an XML file
+
+To compile this program, you will need:
+
+- the ALSA library and headers (libasound)
+- the JACK library and headers (libjack)
+- the MXML library and headers (libmxml)
+
+---------------------------------------------------------------
+
+aj-snapshot takes an optional filename as an argument.
+By default aj-snapshot will store all ALSA and JACK connections
+to this file using XML syntax.
+ 
+ATTENTION: aj-snapshot will overwrite any file you specify as 
+an argument, so be careful not to overwrite any files you care 
+about!
+
+Example:       aj-snapshot connections.xml
+
+---------------------------------------------------------------
+
+When you specify the '-r, --restore' option, aj-snapshot will 
+restore all connections from an existing xml file.
+
+Example:       aj-snapshot -r connections.xml
+
+---------------------------------------------------------------
+
+You can also limit storing/restoring connections to a specific
+subsystem (ALSA or JACK) with the options '-a, --alsa' and 
+'-j, --jack'.
+
+Example:       aj-snapshot -j connections.xml 
+
+stores JACK connections only to connections.xml
+
+	       aj-snapshot -ra connections.xml
+
+restores ALSA connections only from connections.xml
+
+---------------------------------------------------------------
+
+If you specify the '-x, --remove' option when restoring from a 
+file, aj-snapshot will remove all existing connections 
+before restoring, so you will start from a clean slate.
+
+Example:       aj-snapshot -rax connections.xml
+
+removes all existing ALSA connections first, and then restores 
+all ALSA connections from connections.xml
+
+---------------------------------------------------------------
+
+When you specify the '-x, --remove' option whithout specifying
+a filename, aj-snapshot will just remove all existing
+connections of the specified subsystem.
+
+Example:       aj-snapshot -x
+
+removes all ALSA and JACK connections
+
+               aj-snapshot -jx
+
+removes all JACK connections
+
+----------------------------------------------------------------
