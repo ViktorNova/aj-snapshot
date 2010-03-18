@@ -57,7 +57,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 			fprintf(stderr, "Connection from '%s' to '%s' failed!\n", src_port, dest_port);	
 		}
 
-		connection_node = mxmlFindElement(connection_node, port_node, "port", NULL, NULL, MXML_NO_DESCEND);
+		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
 	}
 }
 
