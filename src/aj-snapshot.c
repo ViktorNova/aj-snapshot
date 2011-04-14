@@ -55,6 +55,7 @@ static const struct option long_option[] = {
 	{"jack", 0, NULL, 'j'},
 	{"restore", 0, NULL, 'r'},
 	{"remove", 0, NULL, 'x'},
+	{"force", 0, NULL, 'f'},
 };
 
 int main(int argc, char **argv)
@@ -62,6 +63,7 @@ int main(int argc, char **argv)
 	int c;
 	int try_remove = 0;
 	int remove_connections = 0;
+        int force = 0;
 	enum sys system = ALSA_JACK;
 	enum act action = STORE;
 	static const char *filename;
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrxh", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrxfh", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -84,6 +86,9 @@ int main(int argc, char **argv)
 			break;
 		case 'x':
 			try_remove = 1;
+			break;
+		case 'f':
+			force = 1;
 			break;
 		case 'h':
 			usage();
@@ -131,8 +136,9 @@ int main(int argc, char **argv)
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
-					write_xml(filename, xml_node);
-					fprintf(stdout, "ALSA connections stored!\n");
+					if( write_xml(filename, xml_node, force) ){
+						fprintf(stdout, "ALSA connections stored!\n");
+					} else fprintf(stdout, "Did NOT store ALSA connections!\n");
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
@@ -154,9 +160,10 @@ int main(int argc, char **argv)
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					jack_store(jackc, xml_node);
-					write_xml(filename, xml_node);
+					if( write_xml(filename, xml_node, force) ){
+						fprintf(stdout, "JACK connections stored!\n");
+					} else fprintf(stdout, "Did NOT store JACK connections!\n");
 					mxmlDelete(xml_node);
-					fprintf(stdout, "JACK connections stored!\n");
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
@@ -182,9 +189,10 @@ int main(int argc, char **argv)
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					jack_store(jackc, xml_node);
-					write_xml(filename, xml_node);
+					if( write_xml(filename, xml_node, force) ){
+						fprintf(stdout, "ALSA & JACK connections stored!\n");
+					} else fprintf(stdout, "Did NOT store ALSA and JACK connections!\n");
 					mxmlDelete(xml_node);
-					fprintf(stdout, "ALSA & JACK connections stored!\n");
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);

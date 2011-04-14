@@ -58,14 +58,26 @@ mxml_node_t* read_xml( const char* filename, mxml_node_t* xml_node )
 	return xml_node;
 }
 
-void write_xml( const char* filename, mxml_node_t* xml_node )
+int write_xml( const char* filename, mxml_node_t* xml_node, int force )
 {
 	FILE* file;
 
+	if( file = fopen(filename, "r") ){
+		if(!force){
+			fprintf(stdout, "This file already exists, do you want to overwrite it? y/n\n> ");
+			char answer = getc(stdin);
+                        if(answer != 'y'){
+				fclose(file);
+				return 0;
+			}  
+		}
+		fclose(file);
+	} 
 	if( (file = fopen(filename, "w")) == NULL ){
 		perror("Could not open file for writing");
-		exit(1);
+		return 0;
 	}
 	mxmlSaveFile(xml_node, file, xml_whitespace_cb);
 	fclose(file);
+	return 1;
 }
