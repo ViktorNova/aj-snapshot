@@ -28,5 +28,9 @@
 #include <jack/jack.h>
 #include <mxml.h>
 
+#define IGNORED_CLIENTS_MAX 50
+
+int is_ignored_client(const char *name); // function to check if string is name of ignored client.
+
 #endif
 

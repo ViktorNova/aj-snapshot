@@ -105,6 +105,11 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 
 		name = snd_seq_client_info_get_name(cinfo);
 
+		if( is_ignored_client(name) ){
+			fprintf(stdout, "Ignoring ALSA client %s\n", name);
+			continue;
+		}
+
 		mxml_node_t* client_node;
 		client_node = mxmlNewElement(alsa_node, "client");
 		mxmlElementSetAttr(client_node, "name", name);
@@ -198,6 +203,12 @@ void alsa_restore_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 	while (client_node)
 	{
 		client_name = mxmlElementGetAttr(client_node, "name");
+
+		if( is_ignored_client(client_name) ){
+			fprintf(stdout, "Ignoring ALSA client %s\n", client_name);
+			client_node = mxmlFindElement(client_node, alsa_node, "client", NULL, NULL, MXML_NO_DESCEND);
+			continue;
+		}
 
 		alsa_restore_ports(seq, client_name, client_node);
 

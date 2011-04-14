@@ -25,21 +25,24 @@
 
 static void usage(void)
 {
-	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
-	fprintf(stdout, "  aj-snapshot: Store/restore JACK and/or ALSA midi connections to/from an xml file     \n");
-	fprintf(stdout, "               Copyright (C) 2010 Lieven Moors                                         \n");
-	fprintf(stdout, "                                                                                       \n");
-	fprintf(stdout, "   Without options -a or -j, all actions apply to both ALSA and JACK connections       \n");
-	fprintf(stdout, "                                                                                       \n");
-	fprintf(stdout, "   Usage: aj-snapshot [-options] [file]                                                \n");
-	fprintf(stdout, "                                                                                       \n");
-	fprintf(stdout, "   -a,--alsa     only store/restore ALSA midi connections                              \n");
-	fprintf(stdout, "   -j,--jack     only store/restore JACK audio and midi connections                    \n");
-	fprintf(stdout, "   -r,--restore  restore ALSA and/or JACK connections                                  \n");
-	fprintf(stdout, "   -f,--force    don't ask to overwrite an existing file                               \n");
-	fprintf(stdout, "   -x,--remove   with 'file': remove all ALSA and/or JACK connections before restoring \n");
-	fprintf(stdout, "   -x,--remove   without 'file': only remove ALSA and/or JACK connections              \n");
-	fprintf(stdout, "                                                                                       \n");
+	fprintf(stdout, " -------------------------------------------------------------------------------------\n");
+	fprintf(stdout, " aj-snapshot: Store/restore JACK and/or ALSA midi connections to/from an xml file     \n");
+	fprintf(stdout, "              Copyright (C) 2010 Lieven Moors                                         \n");
+	fprintf(stdout, "                                                                                      \n");
+	fprintf(stdout, " Without options -a or -j, all actions apply to both ALSA and JACK connections        \n");
+	fprintf(stdout, " Without option -r, and with 'file', aj-snapshot will store connections to file.      \n");
+	fprintf(stdout, "                                                                                      \n");
+	fprintf(stdout, " Usage: aj-snapshot [-options] [-i client_name] [file]                                \n");
+	fprintf(stdout, "                                                                                      \n");
+	fprintf(stdout, "  -a,--alsa     Only store/restore ALSA midi connections.                             \n");
+	fprintf(stdout, "  -j,--jack     Only store/restore JACK audio and midi connections.                   \n");
+	fprintf(stdout, "  -r,--restore  Restore ALSA and/or JACK connections.                                 \n");
+	fprintf(stdout, "  -f,--force    Don't ask before overwriting an existing file.                        \n");
+	fprintf(stdout, "  -i,--ignore   Specify a name of a client you want to ignore.                        \n");
+	fprintf(stdout, "                Note: You can ignore multiple clients by repeating this option.       \n");
+	fprintf(stdout, "  -x,--remove   With 'file': remove all ALSA and/or JACK connections before restoring.\n");
+	fprintf(stdout, "  -x,--remove   Without 'file': only remove ALSA and/or JACK connections.             \n");
+	fprintf(stdout, "                                                                                      \n");
 } 
 
 enum sys {
@@ -57,7 +60,21 @@ static const struct option long_option[] = {
 	{"restore", 0, NULL, 'r'},
 	{"remove", 0, NULL, 'x'},
 	{"force", 0, NULL, 'f'},
+	{"ignore", 1, NULL, 'i'},
 };
+
+char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
+
+int ic_n = 0; // number of ignored clients.
+
+int is_ignored_client(const char *name) // function to check if string is name of ignored client.
+{
+	int i;
+	for(i = 0; i < ic_n; i++){
+		if( strcmp(name, ignored_clients[i]) == 0) return 1;
+	}
+	return 0;
+}
 
 int main(int argc, char **argv)
 { 
@@ -72,7 +89,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrxfh", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrxfi:h", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -91,6 +108,14 @@ int main(int argc, char **argv)
 		case 'f':
 			force = 1;
 			break;
+		case 'i':
+			if( ic_n < (IGNORED_CLIENTS_MAX - 1) )
+				ignored_clients[ic_n++] = optarg;
+			else {
+				fprintf(stdout, "aj-snapshot: ERROR: you have more then %i ignored clients\n", IGNORED_CLIENTS_MAX);
+				exit(EXIT_FAILURE);
+			}
+			break;
 		case 'h':
 			usage();
 			return 1;
@@ -107,9 +132,9 @@ int main(int argc, char **argv)
 		action = REMOVE_ONLY;
 	}
 	else {
-		fprintf(stdout, "-------------------------------------------------------------------\n");
-		fprintf(stderr, "aj-snapshot: Please specify one file to store/restore the snapshot,\n");
-		fprintf(stderr, "or use option -x to remove connections only\n");
+		fprintf(stdout, " -------------------------------------------------------------------\n");
+		fprintf(stderr, " aj-snapshot: Please specify one file to store/restore the snapshot,\n");
+		fprintf(stderr, " or use option -x to remove connections only\n");
 		usage();
 		return 1;
 	}
@@ -206,5 +231,5 @@ int main(int argc, char **argv)
 			jack_client_close(jackc);
 			break;
 	}
-	return 0;
+	exit(EXIT_SUCCESS);
 }
