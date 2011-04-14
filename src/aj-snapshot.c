@@ -28,17 +28,18 @@ static void usage(void)
 	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
 	fprintf(stdout, "  aj-snapshot: Store/restore JACK and/or ALSA midi connections to/from an xml file     \n");
 	fprintf(stdout, "               Copyright (C) 2010 Lieven Moors                                         \n");
-	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "                                                                                       \n");
 	fprintf(stdout, "   Without options -a or -j, all actions apply to both ALSA and JACK connections       \n");
-	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "                                                                                       \n");
 	fprintf(stdout, "   Usage: aj-snapshot [-options] [file]                                                \n");
-	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "                                                                                       \n");
 	fprintf(stdout, "   -a,--alsa     only store/restore ALSA midi connections                              \n");
 	fprintf(stdout, "   -j,--jack     only store/restore JACK audio and midi connections                    \n");
 	fprintf(stdout, "   -r,--restore  restore ALSA and/or JACK connections                                  \n");
+	fprintf(stdout, "   -f,--force    don't ask to overwrite an existing file                               \n");
 	fprintf(stdout, "   -x,--remove   with 'file': remove all ALSA and/or JACK connections before restoring \n");
 	fprintf(stdout, "   -x,--remove   without 'file': only remove ALSA and/or JACK connections              \n");
-	fprintf(stdout, "---------------------------------------------------------------------------------------\n");
+	fprintf(stdout, "                                                                                       \n");
 } 
 
 enum sys {
@@ -106,10 +107,9 @@ int main(int argc, char **argv)
 		action = REMOVE_ONLY;
 	}
 	else {
-		fprintf(stderr, "-----------------------------------------------------\n");
-		fprintf(stderr, "Please specify one file to store/restore the snapshot,\n");
+		fprintf(stdout, "-------------------------------------------------------------------\n");
+		fprintf(stderr, "aj-snapshot: Please specify one file to store/restore the snapshot,\n");
 		fprintf(stderr, "or use option -x to remove connections only\n");
-		fprintf(stderr, "-----------------------------------------------------\n");
 		usage();
 		return 1;
 	}
@@ -119,9 +119,7 @@ int main(int argc, char **argv)
 			remove_connections = 1;
 		}
 		else {
-			fprintf(stderr, "------------------------------------------------------\n");
-			fprintf(stderr, "Will not remove connections before storing connections\n");
-			fprintf(stderr, "------------------------------------------------------\n");
+			fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
 		}
 	}
 
@@ -130,20 +128,20 @@ int main(int argc, char **argv)
 			seq = alsa_initialize(seq);
 			if(remove_connections){
 				alsa_remove_connections(seq);
-				fprintf(stdout, "all ALSA connections removed!\n");
+				fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
 			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "ALSA connections stored!\n");
-					} else fprintf(stdout, "Did NOT store ALSA connections!\n");
+						fprintf(stdout, "aj-snapshot: ALSA connections stored!\n");
+					} else fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
-					fprintf(stdout, "ALSA connections restored!\n");
+					fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;
@@ -154,22 +152,22 @@ int main(int argc, char **argv)
 			jackc = jack_initialize(jackc);
 			if(remove_connections){
 				jack_remove_connections(jackc);
-				fprintf(stdout, "all JACK connections removed!\n");
+				fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
 			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					jack_store(jackc, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "JACK connections stored!\n");
-					} else fprintf(stdout, "Did NOT store JACK connections!\n");
+						fprintf(stdout, "aj-snapshot: JACK connections stored!\n");
+					} else fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
 					mxmlDelete(xml_node);
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
-					fprintf(stdout, "JACK connections restored!\n");
+					fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;
@@ -182,7 +180,7 @@ int main(int argc, char **argv)
 			if(remove_connections){
 				alsa_remove_connections(seq);
 				jack_remove_connections(jackc);
-				fprintf(stdout, "all ALSA & JACK connections removed!\n");
+				fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
 			}
 			switch (action){
 				case STORE:
@@ -190,8 +188,8 @@ int main(int argc, char **argv)
 					alsa_store(seq, xml_node);
 					jack_store(jackc, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "ALSA & JACK connections stored!\n");
-					} else fprintf(stdout, "Did NOT store ALSA and JACK connections!\n");
+						fprintf(stdout, "aj-snapshot: ALSA & JACK connections stored!\n");
+					} else fprintf(stdout, "aj-snapshot: Did NOT store ALSA and JACK connections!\n");
 					mxmlDelete(xml_node);
 					break;
 				case RESTORE:
@@ -199,7 +197,7 @@ int main(int argc, char **argv)
 					alsa_restore(seq, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
-					fprintf(stdout, "ALSA & JACK connections restored!\n");
+					fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;
