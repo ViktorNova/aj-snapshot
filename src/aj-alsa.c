@@ -155,7 +155,7 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 						fprintf(stderr, "Port '%s' is already connected to '%s'\n", 
 							client_name, dest_client_name);
 					}
-					else fprintf(stderr, "Connection from '%s' to '%s' failed!\n", 
+					else fprintf(stderr, "Failed to connect port '%s' to '%s' !\n", 
 							client_name, dest_client_name);
 				}
 			}

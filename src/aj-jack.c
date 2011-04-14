@@ -54,7 +54,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 			fprintf(stderr, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 		}
 		else {
-			fprintf(stderr, "Connection from '%s' to '%s' failed!\n", src_port, dest_port);	
+			fprintf(stderr, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);	
 		}
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
