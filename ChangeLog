@@ -1,0 +1,8 @@
+0.9.1 
+First version
+0.9.2
+Added the '-i/--ignore' flag, to be able to ignore certain clients.
+Added the '-f/--force' flag, and ask the user if he wants to overwrite
+an existing file by default.
+Added the '-q/--quiet' flag.
+Cleaned up the information that is printed to the terminal.
