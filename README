@@ -9,15 +9,20 @@ To compile this program, you will need:
 
 ---------------------------------------------------------------
 
-aj-snapshot takes an optional filename as an argument.
+Aj-snapshot takes an optional filename as an argument.
 By default aj-snapshot will store all ALSA and JACK connections
 to this file using XML syntax.
  
-ATTENTION: aj-snapshot will overwrite any file you specify as 
-an argument, so be careful not to overwrite any files you care 
-about!
+If you are going to overwrite an existing file, aj-snapshot
+will ask you whether you want to do this.
 
 Example:       aj-snapshot connections.xml
+
+---------------------------------------------------------------
+
+With the '-f, --force' option, aj-snapshot will not ask whether
+you want to overwrite an existing file. The file will become a
+a new snapshot file, whatever it used to be!
 
 ---------------------------------------------------------------
 
@@ -39,6 +44,31 @@ stores JACK connections only to connections.xml
 	       aj-snapshot -ra connections.xml
 
 restores ALSA connections only from connections.xml
+
+---------------------------------------------------------------
+
+With the '-i, --ignore' option, you can ask aj-snapshot to
+ignore certain clients. You can repeat this option (upto 50
+times). You have to specify one client name as an argument to 
+this option, and the name has to be the exact name of the 
+client. When the client name contains spaces, or any other 
+special characters, these have to be quoted from the shell. 
+You can ignore clients when you store, or when you restore 
+connections. Ignoring clients when restoring will keep the 
+snapshot file intact.
+
+Examples:       
+
+  aj-snapshot -i 'Midi Through' -i Ardour2 connections.xml
+  aj-snapshot -ar -i fluidsynth connections.xml
+
+---------------------------------------------------------------
+
+With the '-q, --quiet' option, you can ask aj-snapshot to not
+print any information about what happens when storing/restoring
+connections. This includes the information about failed 
+connections, which are not considered real errors in this 
+context.
 
 ---------------------------------------------------------------
 
