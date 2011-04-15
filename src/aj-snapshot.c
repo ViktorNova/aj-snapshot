@@ -40,6 +40,7 @@ static void usage(void)
 	fprintf(stdout, "  -f,--force    Don't ask before overwriting an existing file.                        \n");
 	fprintf(stdout, "  -i,--ignore   Specify a name of a client you want to ignore.                        \n");
 	fprintf(stdout, "                Note: You can ignore multiple clients by repeating this option.       \n");
+	fprintf(stdout, "  -q,--quiet    Be quiet about what happens when storing/restoring connections.       \n");
 	fprintf(stdout, "  -x,--remove   With 'file': remove all ALSA and/or JACK connections before restoring.\n");
 	fprintf(stdout, "  -x,--remove   Without 'file': only remove ALSA and/or JACK connections.             \n");
 	fprintf(stdout, "                                                                                      \n");
@@ -61,7 +62,10 @@ static const struct option long_option[] = {
 	{"remove", 0, NULL, 'x'},
 	{"force", 0, NULL, 'f'},
 	{"ignore", 1, NULL, 'i'},
+	{"quiet", 0, NULL, 'q'},
 };
+
+int verbose = 1;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 
@@ -89,7 +93,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrxfi:h", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrxfi:qh", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -112,9 +116,12 @@ int main(int argc, char **argv)
 			if( ic_n < (IGNORED_CLIENTS_MAX - 1) )
 				ignored_clients[ic_n++] = optarg;
 			else {
-				fprintf(stdout, "aj-snapshot: ERROR: you have more then %i ignored clients\n", IGNORED_CLIENTS_MAX);
+				fprintf(stderr, "aj-snapshot: ERROR: you have more then %i ignored clients\n", IGNORED_CLIENTS_MAX);
 				exit(EXIT_FAILURE);
 			}
+			break;
+		case 'q':
+			verbose = 0;
 			break;
 		case 'h':
 			usage();
@@ -132,7 +139,7 @@ int main(int argc, char **argv)
 		action = REMOVE_ONLY;
 	}
 	else {
-		fprintf(stdout, " -------------------------------------------------------------------\n");
+		fprintf(stderr, " -------------------------------------------------------------------\n");
 		fprintf(stderr, " aj-snapshot: Please specify one file to store/restore the snapshot,\n");
 		fprintf(stderr, " or use option -x to remove connections only\n");
 		usage();
@@ -144,7 +151,7 @@ int main(int argc, char **argv)
 			remove_connections = 1;
 		}
 		else {
-			fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
+			if(verbose) fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
 		}
 	}
 
@@ -153,20 +160,20 @@ int main(int argc, char **argv)
 			seq = alsa_initialize(seq);
 			if(remove_connections){
 				alsa_remove_connections(seq);
-				fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
+				if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
 			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					alsa_store(seq, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "aj-snapshot: ALSA connections stored!\n");
-					} else fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
+						if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections stored!\n");
+					} else if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
 					alsa_restore(seq, xml_node);
-					fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+					if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;
@@ -177,22 +184,22 @@ int main(int argc, char **argv)
 			jackc = jack_initialize(jackc);
 			if(remove_connections){
 				jack_remove_connections(jackc);
-				fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
+				if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
 			}
 			switch (action){
 				case STORE:
 					xml_node = mxmlNewXML("1.0");
 					jack_store(jackc, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "aj-snapshot: JACK connections stored!\n");
-					} else fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
+						if(verbose) fprintf(stdout, "aj-snapshot: JACK connections stored!\n");
+					} else if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
 					mxmlDelete(xml_node);
 					break;
 				case RESTORE:
 					xml_node = read_xml(filename, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
-					fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;
@@ -205,7 +212,7 @@ int main(int argc, char **argv)
 			if(remove_connections){
 				alsa_remove_connections(seq);
 				jack_remove_connections(jackc);
-				fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
+				if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
 			}
 			switch (action){
 				case STORE:
@@ -213,8 +220,8 @@ int main(int argc, char **argv)
 					alsa_store(seq, xml_node);
 					jack_store(jackc, xml_node);
 					if( write_xml(filename, xml_node, force) ){
-						fprintf(stdout, "aj-snapshot: ALSA & JACK connections stored!\n");
-					} else fprintf(stdout, "aj-snapshot: Did NOT store ALSA and JACK connections!\n");
+						if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections stored!\n");
+					} else if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA and JACK connections!\n");
 					mxmlDelete(xml_node);
 					break;
 				case RESTORE:
@@ -222,7 +229,7 @@ int main(int argc, char **argv)
 					alsa_restore(seq, xml_node);
 					jack_restore(jackc, xml_node);
 					mxmlDelete(xml_node);
-					fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
+					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
 					break;
 				case REMOVE_ONLY:
 					break;

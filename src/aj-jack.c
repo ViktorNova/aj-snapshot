@@ -19,6 +19,8 @@
 
 #include "aj-snapshot.h"
 
+extern int verbose;
+
 jack_client_t* jack_initialize( jack_client_t* jackc )
 {
 	jackc = jack_client_open("aj-connect", (jack_options_t)0, NULL);
@@ -48,13 +50,13 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 		int err = jack_connect(jackc, src_port, dest_port);
 
 		if (err == 0) {
-			fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
+			if(verbose) fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
 		}
 		else if (err == EEXIST) {
-			fprintf(stderr, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+			if(verbose) fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 		}
 		else {
-			fprintf(stderr, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);	
+			if(verbose) fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);	
 		}
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
@@ -90,7 +92,7 @@ void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
 		client_name = mxmlElementGetAttr(client_node, "name");
 
 		if( is_ignored_client(client_name) ){
-			fprintf(stdout, "Ignoring JACK client %s\n", client_name);
+			if(verbose) fprintf(stdout, "Ignoring JACK client %s\n", client_name);
 			client_node = mxmlFindElement(client_node, jack_node, "client", NULL, NULL, MXML_NO_DESCEND);
 			continue;
 		}
@@ -157,7 +159,7 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 
 		if( is_ignored_client(client_name) ){
 			if( strcmp(client_name_prev, client_name) ){
-				fprintf(stdout, "Ignoring JACK client: %s\n", client_name);
+				if(verbose) fprintf(stdout, "Ignoring JACK client: %s\n", client_name);
 				strcpy(client_name_prev, client_name);
 			}
 			full_name_const = jack_output_ports[++i];
