@@ -1,0 +1,11 @@
+To get the most up-to-date version of aj-snapshot from 
+the git repository, you first have to clone the repository with:
+
+git clone git://aj-snapshot.git.sourceforge.net/gitroot/aj-snapshot/aj-snapshot
+
+To compile it first cd into the new directory and follow these steps:
+
+./autogen.sh
+./configure
+make
+make install
