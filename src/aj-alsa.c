@@ -53,6 +53,11 @@ void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_no
 		snd_seq_get_any_client_info(seq, dest->client, connected_cinfo);
 		client_name = snd_seq_client_info_get_name(connected_cinfo);
 
+		if(is_ignored_client(client_name)){
+			if(verbose) fprintf(stdout, "Ignoring connection to ALSA client %s\n", client_name);
+			continue;
+		}
+
 		snprintf(port_id, 3, "%i", dest->port);
 
 		mxml_node_t* connection_node;
@@ -107,8 +112,8 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 
 		name = snd_seq_client_info_get_name(cinfo);
 
-		if( is_ignored_client(name) ){
-			fprintf(stdout, "Ignoring ALSA client %s\n", name);
+		if(is_ignored_client(name)){
+			if(verbose) fprintf(stdout, "Ignoring ALSA client %s\n", name);
 			continue;
 		}
 
@@ -148,6 +153,11 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 		dest_port_id = atoi(dest_id);
 
 		if (snd_seq_parse_address(seq, &sender, client_name) >= 0) {
+			if( is_ignored_client(dest_client_name) ){
+				if(verbose) fprintf(stdout, "Ignoring connection to ALSA client %s\n", dest_client_name);
+				connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
+				continue;
+			}
 			sender.port = port_id;
 			if (snd_seq_parse_address(seq, &dest, dest_client_name) >= 0) {
 				dest.port = dest_port_id;

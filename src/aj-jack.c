@@ -38,6 +38,8 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 	const char* dest_port;
 	unsigned int s = strlen(client_name) + strlen(port_name) + 2;
 	char src_port[s];
+	char tmp_str[jack_port_name_size()];
+        char* dest_client_name;
 
 	snprintf(src_port, s, "%s:%s", client_name, port_name);
 
@@ -47,6 +49,14 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 	{
 		dest_port = mxmlElementGetAttr(connection_node, "port");
 
+		strcpy(tmp_str, dest_port); // otherwise we change the names of ports in jack !!
+		dest_client_name = strtok(tmp_str, ":");
+
+		if(is_ignored_client(dest_client_name)){
+			if(verbose) fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
+			connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
+			continue;
+		}
 		int err = jack_connect(jackc, src_port, dest_port);
 
 		if (err == 0) {
@@ -122,9 +132,19 @@ void jack_store_connections( jack_client_t* jackc, const char* port_name, mxml_n
 	{
 		unsigned int i = 0;
 		const char* connected_port = connected_ports[i];
+		char tmp_str[jack_port_name_size()];
+		char* dest_client_name;
 
 		while (connected_port) 
 		{
+			strcpy(tmp_str, connected_port); // otherwise we change the names of ports in jack !!
+			dest_client_name = strtok(tmp_str, ":");
+
+			if(is_ignored_client(dest_client_name)){
+				if(verbose) fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
+				connected_port = connected_ports[++i];
+				continue;
+			}
 			connection_node = mxmlNewElement(port_node, "connection");
 			mxmlElementSetAttr(connection_node, "port", connected_port);
 
@@ -139,8 +159,7 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 	mxml_node_t* client_node;
 	mxml_node_t* port_node;
 
-	const char* sep = ":";
-	char full_name[jack_port_name_size()];
+	char tmp_str[jack_port_name_size()];
 	char client_name_prev[jack_port_name_size()];
 	const char* client_name;
 	char* port_name;
@@ -148,21 +167,21 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 	const char **jack_output_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsOutput);
 	
 	unsigned int i = 0;
-	const char* full_name_const = jack_output_ports[i];
+	const char* full_name = jack_output_ports[i];
 
-	while (full_name_const) 
+	while (full_name) 
 	{
-		strcpy(full_name, full_name_const); // otherwise we change the names of ports in jack !!
+		strcpy(tmp_str, full_name); // otherwise we change the names of ports in jack !!
 
-		client_name = strtok(full_name, sep);
-		port_name = strtok(NULL, sep);
+		client_name = strtok(tmp_str, ":");
+		port_name = strtok(NULL, ":");
 
 		if( is_ignored_client(client_name) ){
 			if( strcmp(client_name_prev, client_name) ){
 				if(verbose) fprintf(stdout, "Ignoring JACK client: %s\n", client_name);
 				strcpy(client_name_prev, client_name);
 			}
-			full_name_const = jack_output_ports[++i];
+			full_name = jack_output_ports[++i];
 			continue;
 		}
 		if ( strcmp(client_name_prev, client_name) ){
@@ -173,8 +192,8 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 
 		port_node = mxmlNewElement(client_node, "port");
 		mxmlElementSetAttr(port_node, "name", port_name);
-		jack_store_connections(jackc, full_name_const, port_node);
+		jack_store_connections(jackc, full_name, port_node);
 
-		full_name_const = jack_output_ports[++i];
+		full_name = jack_output_ports[++i];
 	}
 }
