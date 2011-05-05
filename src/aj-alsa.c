@@ -252,7 +252,7 @@ snd_seq_t* alsa_initialize( snd_seq_t* seq )
 		exit(1);
 	}
 
-	if (snd_seq_set_client_name(seq, "aj-connect") < 0) {
+	if (snd_seq_set_client_name(seq, "aj-snapshot") < 0) {
 		snd_seq_close(seq);
 		fprintf(stderr, "can't set client info\n");
 		exit(1);

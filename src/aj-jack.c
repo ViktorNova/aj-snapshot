@@ -23,7 +23,7 @@ extern int verbose;
 
 jack_client_t* jack_initialize( jack_client_t* jackc )
 {
-	jackc = jack_client_open("aj-connect", (jack_options_t)0, NULL);
+	jackc = jack_client_open("aj-snapshot", (jack_options_t)0, NULL);
 
 	if (jackc == NULL) {
 		fprintf(stderr, "Could not become jack client.");
