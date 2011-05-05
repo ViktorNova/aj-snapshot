@@ -98,10 +98,12 @@ int main(int argc, char **argv)
 		switch (c){
 
 		case 'a':
-			system = ALSA;
+			if(system == JACK) system = ALSA_JACK;
+			else system = ALSA;
 			break;
 		case 'j':
-			system = JACK;
+			if(system == ALSA) system = ALSA_JACK;
+			else system = JACK;
 			break;
 		case 'r':
 			action = RESTORE;
