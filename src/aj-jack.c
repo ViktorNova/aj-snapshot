@@ -174,7 +174,7 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 		strcpy(tmp_str, full_name); // otherwise we change the names of ports in jack !!
 
 		client_name = strtok(tmp_str, ":");
-		port_name = strtok(NULL, ":");
+		port_name = strtok(NULL, "\0");
 
 		if( is_ignored_client(client_name) ){
 			if( strcmp(client_name_prev, client_name) ){
