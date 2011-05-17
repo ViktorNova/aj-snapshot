@@ -152,35 +152,35 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 		dest_id = mxmlElementGetAttr(connection_node, "port");
 		dest_port_id = atoi(dest_id);
 
-		if (snd_seq_parse_address(seq, &sender, client_name) >= 0) {
-			if( is_ignored_client(dest_client_name) ){
-				if(verbose) fprintf(stdout, "Ignoring connection to ALSA client %s\n", dest_client_name);
-				connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
-				continue;
-			}
-			sender.port = port_id;
-			if (snd_seq_parse_address(seq, &dest, dest_client_name) >= 0) {
-				dest.port = dest_port_id;
-				snd_seq_port_subscribe_set_sender(subs, &sender);
-				snd_seq_port_subscribe_set_dest(subs, &dest);
-				if (snd_seq_subscribe_port(seq, subs) >= 0) {
-					if(verbose) fprintf(stdout, "Connecting port '%s':%i to '%s':%i\n", 
-						client_name, port_id, dest_client_name, dest_port_id);
-				}
-				else {
-					if (snd_seq_get_port_subscription(seq, subs) == 0) {
-						if(verbose) fprintf(stdout, "Port '%s' is already connected to '%s'\n", 
-							client_name, dest_client_name);
+		if( !is_ignored_client(dest_client_name) ){
+			if (snd_seq_parse_address(seq, &sender, client_name) >= 0) {
+				sender.port = port_id;
+				if (snd_seq_parse_address(seq, &dest, dest_client_name) >= 0) {
+					dest.port = dest_port_id;
+					snd_seq_port_subscribe_set_sender(subs, &sender);
+					snd_seq_port_subscribe_set_dest(subs, &dest);
+					if (snd_seq_subscribe_port(seq, subs) >= 0) {
+						if(verbose) fprintf(stdout, "Connecting port '%s':%i to '%s':%i\n", 
+							client_name, port_id, dest_client_name, dest_port_id);
 					}
-					else if(verbose) fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
-							client_name, dest_client_name);
+					else if(verbose){
+						if (snd_seq_get_port_subscription(seq, subs) == 0) {
+							fprintf(stdout, "Port '%s' is already connected to '%s'\n", 
+								client_name, dest_client_name);
+						}
+						else fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
+								client_name, dest_client_name);
+					}
 				}
-			}
-			else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
+				else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
 					dest_client_name, client_name);
+			}
+			else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
+					client_name, dest_client_name);
 		}
-		else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
-				client_name, dest_client_name);
+		else if(verbose){
+			fprintf(stdout, "Ignoring connection to ALSA client %s\n", dest_client_name);
+		}
 
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
 	}
@@ -216,14 +216,12 @@ void alsa_restore_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 	{
 		client_name = mxmlElementGetAttr(client_node, "name");
 
-		if( is_ignored_client(client_name) ){
-			if(verbose) fprintf(stdout, "Ignoring ALSA client %s\n", client_name);
-			client_node = mxmlFindElement(client_node, alsa_node, "client", NULL, NULL, MXML_NO_DESCEND);
-			continue;
+		if( !is_ignored_client(client_name) ){
+			alsa_restore_ports(seq, client_name, client_node);
 		}
-
-		alsa_restore_ports(seq, client_name, client_node);
-
+		else if(verbose){
+			fprintf(stdout, "Ignoring ALSA client %s\n", client_name);
+		}
 		client_node = mxmlFindElement(client_node, alsa_node, "client", NULL, NULL, MXML_NO_DESCEND);
 	}
 }
