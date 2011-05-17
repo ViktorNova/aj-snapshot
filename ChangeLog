@@ -9,3 +9,7 @@ Cleaned up the information that is printed to the terminal.
 0.9.3
 Corrected GPL license header.
 Make ignoring clients work in both ways. Now connections made to ignored clients are ignored as well.
+0.9.4
+Make the -a and -j flags work together as expected, when they are combined.
+Fixed bug where aj-snapshot would not restore connections to a2jmidid ports.
+Refactoring of ignore-clients code.
