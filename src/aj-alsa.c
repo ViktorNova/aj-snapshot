@@ -20,6 +20,7 @@
 #include "aj-snapshot.h"
 
 extern int verbose;
+extern int daemon_running;
 
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {
@@ -163,7 +164,7 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 						if(verbose) fprintf(stdout, "Connecting port '%s':%i to '%s':%i\n", 
 							client_name, port_id, dest_client_name, dest_port_id);
 					}
-					else if(verbose){
+					else if(verbose && !daemon_running){
 						if (snd_seq_get_port_subscription(seq, subs) == 0) {
 							fprintf(stdout, "Port '%s' is already connected to '%s'\n", 
 								client_name, dest_client_name);
@@ -172,10 +173,10 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 								client_name, dest_client_name);
 					}
 				}
-				else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
+				else if(verbose && !daemon_running) fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
 					dest_client_name, client_name);
 			}
-			else if(verbose) fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
+			else if(verbose  && !daemon_running) fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
 					client_name, dest_client_name);
 		}
 		else if(verbose){

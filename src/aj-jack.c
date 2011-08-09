@@ -20,6 +20,7 @@
 #include "aj-snapshot.h"
 
 extern int verbose;
+extern int daemon_running;
 
 jack_client_t* jack_initialize( jack_client_t* jackc )
 {
@@ -58,14 +59,16 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
 				}
 				else if (err == EEXIST) {
-					fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+					if (!daemon_running) {
+						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+					}
 				}
 				else {
 					fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);
 				}
 			}
 		}
-		else if(verbose){
+		else if(verbose && !daemon_running){
 				fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
 		}
 		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
@@ -99,7 +102,7 @@ void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
 		if( !is_ignored_client(client_name) ){
 			jack_restore_ports(jackc, client_name, client_node);
 		}
-		else if(verbose){
+		else if(verbose  && !daemon_running){
 				fprintf(stdout, "Ignoring JACK client %s\n", client_name);
 		}
 		client_node = mxmlFindElement(client_node, jack_node, "client", NULL, NULL, MXML_NO_DESCEND);

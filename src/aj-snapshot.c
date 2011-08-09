@@ -22,6 +22,9 @@
 #include "aj-file.h"
 #include "aj-jack.h"
 #include "aj-remove.h"
+#include "signal.h"
+
+#define POLLING_INTERVAL_MS 200
 
 static void usage(void)
 {
@@ -37,6 +40,7 @@ static void usage(void)
 	fprintf(stdout, "  -a,--alsa     Only store/restore ALSA midi connections.                             \n");
 	fprintf(stdout, "  -j,--jack     Only store/restore JACK audio and midi connections.                   \n");
 	fprintf(stdout, "  -r,--restore  Restore ALSA and/or JACK connections.                                 \n");
+	fprintf(stdout, "  -d,--daemon   Restore ALSA and/or JACK connections until terminated.                \n");
 	fprintf(stdout, "  -f,--force    Don't ask before overwriting an existing file.                        \n");
 	fprintf(stdout, "  -i,--ignore   Specify a name of a client you want to ignore.                        \n");
 	fprintf(stdout, "                Note: You can ignore multiple clients by repeating this option.       \n");
@@ -51,7 +55,7 @@ enum sys {
 };
 
 enum act {
-	STORE, RESTORE, REMOVE_ONLY
+	STORE, RESTORE, REMOVE_ONLY, DAEMON
 };
 
 static const struct option long_option[] = {
@@ -59,6 +63,7 @@ static const struct option long_option[] = {
 	{"alsa", 0, NULL, 'a'},
 	{"jack", 0, NULL, 'j'},
 	{"restore", 0, NULL, 'r'},
+	{"daemon", 0, NULL, 'd'},
 	{"remove", 0, NULL, 'x'},
 	{"force", 0, NULL, 'f'},
 	{"ignore", 1, NULL, 'i'},
@@ -66,6 +71,7 @@ static const struct option long_option[] = {
 };
 
 int verbose = 1;
+int daemon_running = 0;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 
@@ -78,6 +84,13 @@ int is_ignored_client(const char *name) // function to check if string is name o
 		if( strcmp(name, ignored_clients[i]) == 0) return 1;
 	}
 	return 0;
+}
+
+void exit_cli(int sig) {
+	if (verbose) {
+		fprintf(stdout, "\raj-snapshot exiting!\n");
+	}
+	daemon_running = 0;
 }
 
 int main(int argc, char **argv)
@@ -93,7 +106,7 @@ int main(int argc, char **argv)
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
 
-	while ((c = getopt_long(argc, argv, "ajrxfi:qh", long_option, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
 
 		switch (c){
 
@@ -107,6 +120,10 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			action = RESTORE;
+			break;
+		case 'd':
+			action = DAEMON;
+			daemon_running = 1;
 			break;
 		case 'x':
 			try_remove = 1;
@@ -157,6 +174,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (action==DAEMON) {
+		signal(SIGINT, exit_cli);
+		signal(SIGTERM, exit_cli);
+	}
+
 	switch (system) {
 		case ALSA:
 			seq = alsa_initialize(seq);
@@ -178,6 +200,14 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
 					break;
 				case REMOVE_ONLY:
+					break;
+				case DAEMON:
+					xml_node = read_xml(filename, xml_node);
+					if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections monitored!\n");
+					while (daemon_running) {
+						alsa_restore(seq, xml_node);
+						usleep(POLLING_INTERVAL_MS * 1000);
+					}
 					break;
 			}
 			snd_seq_close(seq);
@@ -204,6 +234,15 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
 					break;
 				case REMOVE_ONLY:
+					break;
+				case DAEMON:					
+					xml_node = read_xml(filename, xml_node);
+					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections monitored!\n");
+					while (daemon_running) {
+						jack_restore(jackc, xml_node);
+						usleep(POLLING_INTERVAL_MS * 1000);
+					}
+					mxmlDelete(xml_node);
 					break;
 			}
 			break;
@@ -235,10 +274,21 @@ int main(int argc, char **argv)
 					break;
 				case REMOVE_ONLY:
 					break;
+				case DAEMON:
+					xml_node = read_xml(filename, xml_node);
+					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
+					while (daemon_running) {
+						alsa_restore(seq, xml_node);
+						jack_restore(jackc, xml_node);
+						usleep(POLLING_INTERVAL_MS * 1000);
+					}
+					mxmlDelete(xml_node);
+					break;
 			}
 			snd_seq_close(seq);
 			jack_client_close(jackc);
 			break;
 	}
+	if(verbose) fprintf(stdout, "bye\n");
 	exit(EXIT_SUCCESS);
 }
