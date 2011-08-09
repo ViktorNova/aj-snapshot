@@ -1,5 +1,5 @@
 /************************************************************************/
-/* Copyright (C) 2009 Lieven Moors                                      */
+/* Copyright (C) 2009-2011 Lieven Moors and Jari Suominen               */
 /*                                                                      */
 /* This file is part of aj-snapshot.                                    */
 /*                                                                      */
@@ -21,6 +21,24 @@
 
 extern int verbose;
 extern int daemon_running;
+extern int jack_dirty;
+
+
+/* Callbacks */
+void jack_updated (void *arg) {
+	//fprintf(stdout, "port appeared\n");
+	jack_dirty = 1;
+}
+
+void jack_shutdown (void *arg) {
+	fprintf(stdout, "aj-snapshot: Jack server has been shut.\n");
+	daemon_running = 0;
+}
+
+void jack_port_connect (void *arg) {
+	//fprintf(stdout, "port connect\n");
+	jack_dirty = 1;
+}
 
 jack_client_t* jack_initialize( jack_client_t* jackc )
 {
@@ -32,6 +50,16 @@ jack_client_t* jack_initialize( jack_client_t* jackc )
 		fprintf(stderr, "Could not become jack client.\n");
 		exit(1);
 	}
+
+	jack_set_port_registration_callback(jackc,jack_updated,0);
+	jack_on_shutdown(jackc,jack_shutdown,0);
+	jack_set_port_connect_callback(jackc,jack_port_connect,0);
+
+	if (jack_activate (jackc)) {
+		fprintf (stderr, "Cannot activate jack client.");
+		exit (1);
+	}
+
 	return jackc;
 }
 

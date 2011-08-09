@@ -1,5 +1,5 @@
 /************************************************************************/
-/* Copyright (C) 2009 Lieven Moors                                      */
+/* Copyright (C) 2009-2011 Lieven Moors and Jari Suominen               */
 /*                                                                      */
 /* This file is part of aj-snapshot.                                    */
 /*                                                                      */
@@ -70,8 +70,10 @@ static const struct option long_option[] = {
 	{"quiet", 0, NULL, 'q'},
 };
 
+// Nasty globals
 int verbose = 1;
 int daemon_running = 0;
+int jack_dirty = 1;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 
@@ -102,9 +104,10 @@ int main(int argc, char **argv)
 	enum sys system = ALSA_JACK;
 	enum act action = STORE;
 	static const char *filename;
-	mxml_node_t* xml_node = NULL;
 	snd_seq_t* seq = NULL;
 	jack_client_t* jackc = NULL;
+	mxml_node_t* xml_node = NULL;
+	
 
 	while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
 
@@ -237,9 +240,12 @@ int main(int argc, char **argv)
 					break;
 				case DAEMON:					
 					xml_node = read_xml(filename, xml_node);
-					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections monitored!\n");
+					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
 					while (daemon_running) {
-						jack_restore(jackc, xml_node);
+						if (jack_dirty) {
+							jack_restore(jackc, xml_node);
+							jack_dirty = 0;
+						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
 					mxmlDelete(xml_node);
@@ -279,7 +285,10 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
 					while (daemon_running) {
 						alsa_restore(seq, xml_node);
-						jack_restore(jackc, xml_node);
+						if (jack_dirty) {
+							jack_restore(jackc, xml_node);
+							jack_dirty = 0;
+						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
 					mxmlDelete(xml_node);
