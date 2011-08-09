@@ -40,7 +40,7 @@ void jack_port_connect (void *arg) {
 	jack_dirty = 1;
 }
 
-jack_client_t* jack_initialize( jack_client_t* jackc )
+jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 {
 	jack_options_t options = JackNoStartServer;
 
@@ -51,15 +51,16 @@ jack_client_t* jack_initialize( jack_client_t* jackc )
 		exit(1);
 	}
 
-	jack_set_port_registration_callback(jackc,jack_updated,0);
-	jack_on_shutdown(jackc,jack_shutdown,0);
-	jack_set_port_connect_callback(jackc,jack_port_connect,0);
+	if (callbacks_on) {
+		jack_set_port_registration_callback(jackc,jack_updated,0);
+		jack_on_shutdown(jackc,jack_shutdown,0);
+		jack_set_port_connect_callback(jackc,jack_port_connect,0);
 
-	if (jack_activate (jackc)) {
-		fprintf (stderr, "Cannot activate jack client.");
-		exit (1);
+		if (jack_activate (jackc)) {
+			fprintf (stderr, "Cannot activate jack client.");
+			exit (1);
+		}
 	}
-
 	return jackc;
 }
 

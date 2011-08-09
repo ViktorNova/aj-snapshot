@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 			snd_seq_close(seq);
 			break;
 		case JACK:
-			jackc = jack_initialize(jackc);
+			jackc = jack_initialize(jackc, (action==DAEMON));
 			if(remove_connections){
 				jack_remove_connections(jackc);
 				if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 			break;
 			jack_client_close(jackc);
 		case ALSA_JACK:
-			jackc = jack_initialize(jackc);
+			jackc = jack_initialize(jackc, (action==DAEMON));
 			seq = alsa_initialize(seq);
 			if(remove_connections){
 				alsa_remove_connections(seq);
