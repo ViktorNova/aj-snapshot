@@ -243,8 +243,8 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
 					while (daemon_running) {
 						if (jack_dirty) {
-							jack_restore(jackc, xml_node);
 							jack_dirty = 0;
+							jack_restore(jackc, xml_node);
 						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
@@ -286,8 +286,8 @@ int main(int argc, char **argv)
 					while (daemon_running) {
 						alsa_restore(seq, xml_node);
 						if (jack_dirty) {
-							jack_restore(jackc, xml_node);
 							jack_dirty = 0;
+							jack_restore(jackc, xml_node);
 						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
