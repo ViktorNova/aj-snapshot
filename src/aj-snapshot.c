@@ -248,8 +248,8 @@ int main(int argc, char **argv)
 			break;
 			jack_client_close(jackc);
 		case ALSA_JACK:
-			seq = alsa_initialize(seq);
 			jackc = jack_initialize(jackc);
+			seq = alsa_initialize(seq);
 			if(remove_connections){
 				alsa_remove_connections(seq);
 				jack_remove_connections(jackc);
@@ -289,6 +289,6 @@ int main(int argc, char **argv)
 			jack_client_close(jackc);
 			break;
 	}
-	if(verbose) fprintf(stdout, "bye\n");
+	//if(verbose) fprintf(stdout, "bye\n");
 	exit(EXIT_SUCCESS);
 }

@@ -24,10 +24,12 @@ extern int daemon_running;
 
 jack_client_t* jack_initialize( jack_client_t* jackc )
 {
-	jackc = jack_client_open("aj-snapshot", (jack_options_t)0, NULL);
+	jack_options_t options = JackNoStartServer;
+
+	jackc = jack_client_open("aj-snapshot", options, NULL);
 
 	if (jackc == NULL) {
-		fprintf(stderr, "Could not become jack client.");
+		fprintf(stderr, "Could not become jack client.\n");
 		exit(1);
 	}
 	return jackc;
@@ -57,14 +59,12 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 			if(verbose){
 				if (err == 0) {
 					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
-				}
-				else if (err == EEXIST) {
-					if (!daemon_running) {
+				} else if (!daemon_running) {
+					if (err == EEXIST) {
 						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+					} else {
+						fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);
 					}
-				}
-				else {
-					fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);
 				}
 			}
 		}
