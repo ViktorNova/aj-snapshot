@@ -232,6 +232,9 @@ int main(int argc, char **argv)
                                                 if (reload_xml > 0) {
                                                         reload_xml = 0;
                                                         xml_node = read_xml(filename, xml_node);
+			                                if(remove_connections){
+				                                alsa_remove_connections(seq);
+			                                }
                                                 }
 						alsa_restore(seq, xml_node);
 						usleep(POLLING_INTERVAL_MS * 1000);
@@ -265,20 +268,23 @@ int main(int argc, char **argv)
 					break;
 				case DAEMON:					
 					xml_node = read_xml(filename, xml_node);
-					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
+					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections monitored!\n");
 					while (daemon_running) {
                                                 if (reload_xml > 0) {
                                                         reload_xml = 0;
                                                         xml_node = read_xml(filename, xml_node);
+			                                if(remove_connections){
+				                                jack_remove_connections(jackc);
+			                                }
                                                 }
 						pthread_mutex_lock( &callback_lock );
 						if (jack_dirty > 0) {
 							jack_dirty = 0;
 							pthread_mutex_unlock( &callback_lock );
 							jack_restore(jackc, xml_node);
-						} else {
-							pthread_mutex_unlock( &callback_lock );
-						}
+						} 
+                                                else pthread_mutex_unlock( &callback_lock );
+
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
 					mxmlDelete(xml_node);
@@ -320,6 +326,10 @@ int main(int argc, char **argv)
                                                 if (reload_xml > 0) {
                                                         reload_xml = 0;
                                                         xml_node = read_xml(filename, xml_node);
+			                                if(remove_connections){
+				                                alsa_remove_connections(seq);
+				                                jack_remove_connections(jackc);
+                                                        }
                                                 }
 						alsa_restore(seq, xml_node);
 						pthread_mutex_lock( &callback_lock );
@@ -327,9 +337,8 @@ int main(int argc, char **argv)
 							jack_dirty = 0;
 							pthread_mutex_unlock( &callback_lock );
 							jack_restore(jackc, xml_node);
-						} else {
-							pthread_mutex_unlock( &callback_lock );
-						}
+						} 
+                                                else pthread_mutex_unlock( &callback_lock );
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
 					mxmlDelete(xml_node);
