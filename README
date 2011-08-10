@@ -33,6 +33,14 @@ Example:       aj-snapshot -r connections.xml
 
 ---------------------------------------------------------------
 
+When you specify the '-d, --daemon' option, aj-snapshot will
+keep on running until it is stopped, restoring connections
+while clients and ports appear.
+
+Example:       aj-snapshot -d connections.xml
+
+----------------------------------------------------------------
+
 You can also limit storing/restoring connections to a specific
 subsystem (ALSA or JACK) with the options '-a, --alsa' and 
 '-j, --jack'.
