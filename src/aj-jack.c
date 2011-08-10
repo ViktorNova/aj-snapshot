@@ -25,20 +25,16 @@ extern int jack_dirty;
 
 
 /* Callbacks */
-void jack_updated (void *arg) {
-	//fprintf(stdout, "port appeared\n");
+int jack_graph_order (void *arg) {
+	fprintf(stdout, "graph reordered\n");
 	jack_dirty = 1;
 }
 
 void jack_shutdown (void *arg) {
-	fprintf(stdout, "aj-snapshot: Jack server has been shut.\n");
+	fprintf(stdout, "aj-snapshot: Jack server has been shut down.\n");
 	daemon_running = 0;
 }
 
-void jack_port_connect (void *arg) {
-	//fprintf(stdout, "port connect\n");
-	jack_dirty = 1;
-}
 
 jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 {
@@ -52,9 +48,8 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 	}
 
 	if (callbacks_on) {
-		jack_set_port_registration_callback(jackc,jack_updated,0);
-		jack_on_shutdown(jackc,jack_shutdown,0);
-		jack_set_port_connect_callback(jackc,jack_port_connect,0);
+		jack_set_graph_order_callback(jackc, jack_graph_order, 0);
+		jack_on_shutdown(jackc, jack_shutdown, 0);
 
 		if (jack_activate (jackc)) {
 			fprintf (stderr, "Cannot activate jack client.");
@@ -88,10 +83,12 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 			if(verbose){
 				if (err == 0) {
 					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
-				} else if (!daemon_running) {
+				} 
+                                else if (!daemon_running) {
 					if (err == EEXIST) {
 						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
-					} else {
+					} 
+                                        else {
 						fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);
 					}
 				}
