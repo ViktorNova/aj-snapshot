@@ -75,6 +75,7 @@ static const struct option long_option[] = {
 int verbose = 1;
 int daemon_running = 0;
 int jack_dirty = 1;
+int reload_xml = 0;
 pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
@@ -95,6 +96,13 @@ void exit_cli(int sig) {
 		fprintf(stdout, "\raj-snapshot exiting!\n");
 	}
 	daemon_running = 0;
+}
+
+void reload_xml_file(int sig) {
+	if (verbose) {
+		fprintf(stdout, "\rreloading xml!\n");
+	}
+	reload_xml = 1;
 }
 
 int main(int argc, char **argv)
@@ -182,6 +190,7 @@ int main(int argc, char **argv)
 	if (action==DAEMON) {
 		signal(SIGINT, exit_cli);
 		signal(SIGTERM, exit_cli);
+		signal(SIGHUP, reload_xml_file);
 	}
 
 	switch (system) {
@@ -210,6 +219,10 @@ int main(int argc, char **argv)
 					xml_node = read_xml(filename, xml_node);
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections monitored!\n");
 					while (daemon_running) {
+                                                if (reload_xml > 0) {
+                                                        reload_xml = 0;
+                                                        xml_node = read_xml(filename, xml_node);
+                                                }
 						alsa_restore(seq, xml_node);
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
@@ -244,6 +257,10 @@ int main(int argc, char **argv)
 					xml_node = read_xml(filename, xml_node);
 					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
 					while (daemon_running) {
+                                                if (reload_xml > 0) {
+                                                        reload_xml = 0;
+                                                        xml_node = read_xml(filename, xml_node);
+                                                }
 						pthread_mutex_lock( &callback_lock );
 						if (jack_dirty > 0) {
 							jack_dirty = 0;
@@ -290,6 +307,10 @@ int main(int argc, char **argv)
 					xml_node = read_xml(filename, xml_node);
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
 					while (daemon_running) {
+                                                if (reload_xml > 0) {
+                                                        reload_xml = 0;
+                                                        xml_node = read_xml(filename, xml_node);
+                                                }
 						alsa_restore(seq, xml_node);
 						pthread_mutex_lock( &callback_lock );
 						if (jack_dirty > 0) {
