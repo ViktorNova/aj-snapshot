@@ -87,7 +87,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 				if (err == 0) {
 					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
 				} 
-                else if (!daemon_running || 1) {
+                                else if (!daemon_running || 1) {
 					if (err == EEXIST) {
 						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 					} 
