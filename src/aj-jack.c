@@ -22,12 +22,15 @@
 extern int verbose;
 extern int daemon_running;
 extern int jack_dirty;
+extern pthread_mutex_t callback_lock;
 
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
-	fprintf(stdout, "graph reordered\n");
+	//fprintf(stdout, "graph reordered\n");
+	pthread_mutex_lock( &callback_lock );
 	jack_dirty++;
+	pthread_mutex_unlock( &callback_lock );
 }
 
 void jack_shutdown (void *arg) {
@@ -81,7 +84,9 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 		if(!is_ignored_client(dest_client_name)){
 			int err = jack_connect(jackc, src_port, dest_port);
 			if (err == 0) {
+				pthread_mutex_lock( &callback_lock );
 				jack_dirty--;
+				pthread_mutex_unlock( &callback_lock );
 			}
 			if(verbose){
 				if (err == 0) {

@@ -23,6 +23,7 @@
 #include "aj-jack.h"
 #include "aj-remove.h"
 #include "signal.h"
+#include "pthread.h"
 
 #define POLLING_INTERVAL_MS 200
 
@@ -74,6 +75,7 @@ static const struct option long_option[] = {
 int verbose = 1;
 int daemon_running = 0;
 int jack_dirty = 1;
+pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 
@@ -242,9 +244,13 @@ int main(int argc, char **argv)
 					xml_node = read_xml(filename, xml_node);
 					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
 					while (daemon_running) {
+						pthread_mutex_lock( &callback_lock );
 						if (jack_dirty > 0) {
 							jack_dirty = 0;
+							pthread_mutex_unlock( &callback_lock );
 							jack_restore(jackc, xml_node);
+						} else {
+							pthread_mutex_unlock( &callback_lock );
 						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
@@ -285,9 +291,13 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
 					while (daemon_running) {
 						alsa_restore(seq, xml_node);
+						pthread_mutex_lock( &callback_lock );
 						if (jack_dirty > 0) {
 							jack_dirty = 0;
+							pthread_mutex_unlock( &callback_lock );
 							jack_restore(jackc, xml_node);
+						} else {
+							pthread_mutex_unlock( &callback_lock );
 						}
 						usleep(POLLING_INTERVAL_MS * 1000);
 					}
