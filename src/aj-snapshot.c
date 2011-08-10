@@ -188,9 +188,19 @@ int main(int argc, char **argv)
 	}
 
 	if (action==DAEMON) {
-		signal(SIGINT, exit_cli);
-		signal(SIGTERM, exit_cli);
-		signal(SIGHUP, reload_xml_file);
+                struct sigaction sig_int_handler;
+                struct sigaction sig_hup_handler;
+
+                sig_int_handler.sa_handler = exit_cli;
+                sigemptyset(&sig_int_handler.sa_mask);
+                sig_int_handler.sa_flags = 0;
+                sig_hup_handler.sa_handler = reload_xml_file;
+                sigemptyset(&sig_hup_handler.sa_mask);
+                sig_hup_handler.sa_flags = 0;
+
+                sigaction(SIGINT, &sig_int_handler, NULL);
+                sigaction(SIGTERM, &sig_int_handler, NULL);
+                sigaction(SIGHUP, &sig_hup_handler, NULL);
 	}
 
 	switch (system) {
