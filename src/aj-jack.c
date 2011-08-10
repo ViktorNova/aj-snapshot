@@ -27,7 +27,7 @@ extern int jack_dirty;
 /* Callbacks */
 int jack_graph_order (void *arg) {
 	fprintf(stdout, "graph reordered\n");
-	jack_dirty = 1;
+	jack_dirty++;
 }
 
 void jack_shutdown (void *arg) {
@@ -80,11 +80,14 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 
 		if(!is_ignored_client(dest_client_name)){
 			int err = jack_connect(jackc, src_port, dest_port);
+			if (err == 0) {
+				jack_dirty--;
+			}
 			if(verbose){
 				if (err == 0) {
 					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
 				} 
-                                else if (!daemon_running) {
+                else if (!daemon_running || 1) {
 					if (err == EEXIST) {
 						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 					} 

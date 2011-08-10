@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 					xml_node = read_xml(filename, xml_node);
 					if(verbose) fprintf(stdout, "aj-snapshot: JACK connections cmonitored!\n");
 					while (daemon_running) {
-						if (jack_dirty) {
+						if (jack_dirty > 0) {
 							jack_dirty = 0;
 							jack_restore(jackc, xml_node);
 						}
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 					if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
 					while (daemon_running) {
 						alsa_restore(seq, xml_node);
-						if (jack_dirty) {
+						if (jack_dirty > 0) {
 							jack_dirty = 0;
 							jack_restore(jackc, xml_node);
 						}
@@ -298,6 +298,5 @@ int main(int argc, char **argv)
 			jack_client_close(jackc);
 			break;
 	}
-	//if(verbose) fprintf(stdout, "bye\n");
 	exit(EXIT_SUCCESS);
 }
