@@ -75,6 +75,7 @@ static const struct option long_option[] = {
 int verbose = 1;
 int daemon_running = 0;
 int jack_dirty = 1;
+int restore_successful = 1; 
 int reload_xml = 0;
 pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -219,7 +220,13 @@ int main(int argc, char **argv)
                 case RESTORE:
                     xml_node = read_xml(filename, xml_node);
                     alsa_restore(seq, xml_node);
-                    if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+                    if(verbose) {
+                        if (restore_successful) {
+                            fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+                        } else {
+                            fprintf(stdout, "aj-snapshot: All ALSA connections could not be restored!\n");
+                        }
+                    }
                     break;
                 case REMOVE_ONLY:
                     break;
@@ -261,7 +268,11 @@ int main(int argc, char **argv)
                     xml_node = read_xml(filename, xml_node);
                     jack_restore(jackc, xml_node);
                     mxmlDelete(xml_node);
-                    if(verbose) fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+                    if (restore_successful) {
+                            fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+                        } else {
+                            fprintf(stdout, "aj-snapshot: All JACK connections could not be restored!\n");
+                        }
                     break;
                 case REMOVE_ONLY:
                     break;
@@ -314,7 +325,11 @@ int main(int argc, char **argv)
                     alsa_restore(seq, xml_node);
                     jack_restore(jackc, xml_node);
                     mxmlDelete(xml_node);
-                    if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
+                    if (restore_successful) {
+                        fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
+                    } else {
+                        fprintf(stdout, "aj-snapshot: All ALSA & JACK connections could not be restored!\n");
+                    }
                     break;
                 case REMOVE_ONLY:
                     break;
@@ -348,5 +363,8 @@ int main(int argc, char **argv)
             jack_client_close(jackc);
             break;
     }
-    exit(EXIT_SUCCESS);
+    if (action==DAEMON || restore_successful) {
+        exit(EXIT_SUCCESS);
+    }
+    exit(EXIT_FAILURE);
 }

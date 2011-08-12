@@ -21,6 +21,7 @@
 
 extern int verbose;
 extern int daemon_running;
+int restore_successful;
 
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {
@@ -169,15 +170,24 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 							fprintf(stdout, "Port '%s' is already connected to '%s'\n", 
 								client_name, dest_client_name);
 						}
-						else fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
-								client_name, dest_client_name);
+						else  { 
+                            fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
+							        client_name, dest_client_name);
+                            restore_successful = 0;
+                        }
 					}
 				}
-				else if(verbose && !daemon_running) fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
-					dest_client_name, client_name);
+				else if(verbose && !daemon_running) {
+                    fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
+					        dest_client_name, client_name);
+                    restore_successful = 0;
+                }
 			}
-			else if(verbose  && !daemon_running) fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
-					client_name, dest_client_name);
+			else if(verbose  && !daemon_running) { 
+                fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
+    					client_name, dest_client_name);
+                restore_successful = 0;
+            }
 		}
 		else if(verbose){
 			fprintf(stdout, "Ignoring connection to ALSA client %s\n", dest_client_name);

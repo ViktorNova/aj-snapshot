@@ -23,7 +23,7 @@ extern int verbose;
 extern int daemon_running;
 extern int jack_dirty;
 extern pthread_mutex_t callback_lock;
-
+int restore_successful;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
@@ -46,7 +46,7 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 	jackc = jack_client_open("aj-snapshot", options, NULL);
 
 	if (jackc == NULL) {
-		fprintf(stderr, "Jack server is not running.\n");
+		fprintf(stderr, "aj-snapshot: Warning: Jack server is not running.\n");
 		return NULL;
 	}
 
@@ -55,7 +55,7 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 		jack_on_shutdown(jackc, jack_shutdown, 0);
 
 		if (jack_activate (jackc)) {
-			fprintf (stderr, "Jack server seems to be running but is not responding.");
+			fprintf (stderr, "aj-snapshot: Warning: Jack server seems to be running but is not responding.");
 			return NULL;
 		}
 	}
@@ -103,6 +103,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 					} 
                     else {
 						fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
+                        restore_successful = 0;
 					}
 				}
 			}
