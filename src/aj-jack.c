@@ -46,8 +46,8 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 	jackc = jack_client_open("aj-snapshot", options, NULL);
 
 	if (jackc == NULL) {
-		fprintf(stderr, "Could not become jack client.\n");
-		exit(1);
+		fprintf(stderr, "Jack server is not running.\n");
+		return NULL;
 	}
 
 	if (callbacks_on) {
@@ -55,8 +55,8 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 		jack_on_shutdown(jackc, jack_shutdown, 0);
 
 		if (jack_activate (jackc)) {
-			fprintf (stderr, "Cannot activate jack client.");
-			exit (1);
+			fprintf (stderr, "Jack server seems to be running but is not responding.");
+			return NULL;
 		}
 	}
 	return jackc;
@@ -82,7 +82,12 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 		dest_client_name = strtok(tmp_str, ":");
 
 		if(!is_ignored_client(dest_client_name)){
-			int err = jack_connect(jackc, src_port, dest_port);
+			int err;
+			if (jackc == NULL) {
+				err = ENOENT;
+			} else {
+				err = jack_connect(jackc, src_port, dest_port);
+			}
 			if (err == 0) {
 				pthread_mutex_lock( &callback_lock );
 				jack_dirty--;
@@ -96,8 +101,8 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 					if (err == EEXIST) {
 						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 					} 
-                                        else {
-						fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", src_port, dest_port);
+                    else {
+						fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
 					}
 				}
 			}
@@ -191,6 +196,8 @@ void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 	char client_name_prev[jack_port_name_size()];
 	const char* client_name;
 	char* port_name;
+
+	if (jackc == NULL) return;
 
 	const char **jack_output_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsOutput);
 	
