@@ -64,55 +64,55 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 
 void jack_restore_connections( jack_client_t* jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
 {
-	mxml_node_t* connection_node;
-	const char* dest_port;
-	unsigned int s = strlen(client_name) + strlen(port_name) + 2;
-	char src_port[s];
-	char tmp_str[jack_port_name_size()];
-        char* dest_client_name;
+    mxml_node_t* connection_node;
+    const char* dest_port;
+    unsigned int s = strlen(client_name) + strlen(port_name) + 2;
+    char src_port[s];
+    char tmp_str[jack_port_name_size()];
+    char* dest_client_name;
 
-	snprintf(src_port, s, "%s:%s", client_name, port_name);
+    snprintf(src_port, s, "%s:%s", client_name, port_name);
 
-	connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
+    connection_node = mxmlFindElement(port_node, port_node, "connection", NULL, NULL, MXML_DESCEND_FIRST);
 
-	while (connection_node){
-		dest_port = mxmlElementGetAttr(connection_node, "port");
+    while (connection_node){
+        dest_port = mxmlElementGetAttr(connection_node, "port");
 
-		strcpy(tmp_str, dest_port); // otherwise we change the names of ports in jack !!
-		dest_client_name = strtok(tmp_str, ":");
+        strcpy(tmp_str, dest_port); // otherwise we change the names of ports in jack !!
+        dest_client_name = strtok(tmp_str, ":");
 
-		if(!is_ignored_client(dest_client_name)){
-			int err;
-			if (jackc == NULL) {
-				err = ENOENT;
-			} else {
-				err = jack_connect(jackc, src_port, dest_port);
-			}
-			if (err == 0) {
-				pthread_mutex_lock( &callback_lock );
-				jack_dirty--;
-				pthread_mutex_unlock( &callback_lock );
-			}
-			if(verbose){
-				if (err == 0) {
-					fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
-				} 
+        if(!is_ignored_client(dest_client_name)){
+            int err;
+            if (jackc == NULL) {
+                err = ENOENT;
+            } else {
+                err = jack_connect(jackc, src_port, dest_port);
+            }
+            if (err == 0) {
+                pthread_mutex_lock( &callback_lock );
+                jack_dirty--;
+                pthread_mutex_unlock( &callback_lock );
+            }
+            if(verbose){
+                if (err == 0) {
+                    fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
+                } 
                 else if (!daemon_running) {
-					if (err == EEXIST) {
-						fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
+                    if (err == EEXIST) {
+                        fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
 					} 
                     else {
-						fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
+                        fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
                         restore_successful = 0;
-					}
-				}
-			}
-		}
-		else if(verbose && !daemon_running){
-				fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
-		}
-		connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
-	}
+                    }
+                }
+            }
+        }
+        else if(verbose && !daemon_running){
+            fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
+        }
+        connection_node = mxmlFindElement(connection_node, port_node, "connection", NULL, NULL, MXML_NO_DESCEND);
+    }
 }
 
 void jack_restore_ports( jack_client_t* jackc, const char* client_name, mxml_node_t* client_node)
