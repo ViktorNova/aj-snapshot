@@ -50,6 +50,8 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 		return NULL;
 	}
 
+    void ** tmp;
+
     jack_on_shutdown(jackc, jack_shutdown, 0);
 
 	if (callbacks_on) {
