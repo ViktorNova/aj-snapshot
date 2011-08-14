@@ -252,19 +252,19 @@ snd_seq_t* alsa_initialize( snd_seq_t* seq )
 
 	if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
 		fprintf(stderr, "can't open sequencer\n");
-		exit(1);
+		return NULL;
 	}
 
 	if ((client = snd_seq_client_id(seq)) < 0) {
 		snd_seq_close(seq);
 		fprintf(stderr, "can't get client id\n");
-		exit(1);
+		return NULL;
 	}
 
 	if (snd_seq_set_client_name(seq, "aj-snapshot") < 0) {
 		snd_seq_close(seq);
 		fprintf(stderr, "can't set client info\n");
-		exit(1);
+		return NULL;
 	}
 	return seq;
 }
