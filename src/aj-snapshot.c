@@ -94,7 +94,7 @@ int is_ignored_client(const char *name) // function to check if string is name o
 
 void exit_cli(int sig) {
     if (verbose) {
-        fprintf(stdout, "\raj-snapshot exiting!\n");
+        fprintf(stdout, "\raj-snapshot: Exiting!\n");
     }
     daemon_running = 0;
 }
@@ -137,7 +137,6 @@ int main(int argc, char **argv)
             break;
         case 'd':
             action = DAEMON;
-            daemon_running = 1;
             break;
         case 'x':
             try_remove = 1;
@@ -247,6 +246,7 @@ int main(int argc, char **argv)
                 case DAEMON:
                     xml_node = read_xml(filename, xml_node);
                     if(verbose) fprintf(stdout, "aj-snapshot: ALSA connections monitored!\n");
+                    daemon_running = 1;
                     while (daemon_running) {
                         if (reload_xml > 0) {
                             reload_xml = 0;
@@ -264,10 +264,7 @@ int main(int argc, char **argv)
             if (seq != NULL) snd_seq_close(seq);
             break;
         case JACK:
-            jackc = jack_initialize(jackc, (action==DAEMON));
-            if (action!=DAEMON) {
-                
-            }
+            jack_initialize(&jackc, (action==DAEMON));
             if(remove_connections){
                 if (jackc!=NULL) {
                     jack_remove_connections(jackc);
@@ -309,14 +306,14 @@ int main(int argc, char **argv)
                     break;
                 case REMOVE_ONLY:
                     break;
-                case DAEMON:
-                     if (jackc == NULL) {
-                        if(verbose) fprintf(stdout, "aj-snapshot: Skip monitoring JACK connections.\n");
-                        break;
-                    }					
+                case DAEMON:			
                     xml_node = read_xml(filename, xml_node);
                     if(verbose) fprintf(stdout, "aj-snapshot: JACK connections monitored!\n");
+                    daemon_running = 1;
                     while (daemon_running) {
+                        if (jackc == NULL) {
+                            jack_initialize(&jackc, (action==DAEMON));
+                        }	
                         if (reload_xml > 0) {
                             reload_xml = 0;
                             xml_node = read_xml(filename, xml_node);
@@ -340,7 +337,7 @@ int main(int argc, char **argv)
             if (jackc != NULL) jack_client_close(jackc);
             break;           
         case ALSA_JACK:
-            jackc = jack_initialize(jackc, (action==DAEMON));
+            jack_initialize(&jackc, (action==DAEMON));
             seq = alsa_initialize(seq);
             if(remove_connections){
                 if (jackc!=NULL && seq != NULL) {
@@ -387,13 +384,14 @@ int main(int argc, char **argv)
                 case REMOVE_ONLY:
                     break;
                 case DAEMON:
-                     if (jackc == NULL || seq == NULL) {
-                        if(verbose) fprintf(stdout, "aj-snapshot: Skip monitoring ALSA & JACK connections.\n");
-                        break;
-                    }	
                     xml_node = read_xml(filename, xml_node);
                     if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
+                    daemon_running = 1;
                     while (daemon_running) {
+                        if (jackc == NULL) {
+                            jack_initialize(&jackc, (action==DAEMON));
+                        }
+
                         if (reload_xml > 0) {
                             reload_xml = 0;
                             xml_node = read_xml(filename, xml_node);
@@ -403,7 +401,9 @@ int main(int argc, char **argv)
 				                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
                             }
                         }
+
                         alsa_restore(seq, xml_node);
+
                         pthread_mutex_lock( &callback_lock );
                         if (jack_dirty > 0) {
                             jack_dirty = 0;
@@ -411,6 +411,7 @@ int main(int argc, char **argv)
                             jack_restore(jackc, xml_node);
                         } 
                         else pthread_mutex_unlock( &callback_lock );
+                    
                         usleep(POLLING_INTERVAL_MS * 1000);
                     }
                     mxmlDelete(xml_node);

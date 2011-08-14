@@ -33,36 +33,40 @@ int jack_graph_order (void *arg) {
 	pthread_mutex_unlock( &callback_lock );
 }
 
-void jack_shutdown (void *arg) {
+void jack_shutdown (void * jackc) {
 	fprintf(stdout, "aj-snapshot: Jack server has been shut down.\n");
-	daemon_running = 0;
+
+    jack_client_t** tmp;
+    tmp = (jack_client_t**)jackc;
+    *tmp = NULL;
+	
 }
 
 
-jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
+void jack_initialize( jack_client_t** jackc, int callbacks_on )
 {
 	jack_options_t options = JackNoStartServer;
+	*jackc = jack_client_open("aj-snapshot", options, NULL);
 
-	jackc = jack_client_open("aj-snapshot", options, NULL);
-
-	if (jackc == NULL) {
-		fprintf(stderr, "aj-snapshot: Jack server is not running.\n");
-		return NULL;
+	if (*jackc == NULL) {
+		if (verbose && !daemon_running) fprintf(stderr, "aj-snapshot: Jack server is not running.\n");
+		return;
 	}
 
-    void ** tmp;
-
-    jack_on_shutdown(jackc, jack_shutdown, 0);
+    jack_on_shutdown(*jackc, jack_shutdown, jackc);
 
 	if (callbacks_on) {
-		jack_set_graph_order_callback(jackc, jack_graph_order, 0);
+		jack_set_graph_order_callback(*jackc, jack_graph_order, 0);
 		
-		if (jack_activate (jackc)) {
+		if (jack_activate (*jackc)) {
 			fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
-			return NULL;
+            // close client line here!
+            *jackc == NULL;
+			return;
 		}
 	}
-	return jackc;
+    if (verbose && daemon_running) fprintf(stderr, "aj-snapshot: Jack server was started.\n");
+	return;
 }
 
 void jack_restore_connections( jack_client_t* jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
