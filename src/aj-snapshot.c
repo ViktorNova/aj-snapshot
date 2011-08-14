@@ -206,11 +206,21 @@ int main(int argc, char **argv)
         case ALSA:
             seq = alsa_initialize(seq);
             if(remove_connections){
-                alsa_remove_connections(seq);
-                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
+                 if (seq!=NULL) {
+                    alsa_remove_connections(seq);
+                    if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
+                } else {
+                    restore_successful = 0;
+                    if(verbose) fprintf(stdout, "aj-snapshot: Did NOT remove ALSA connections!\n");
+                }
             }
             switch (action){
                 case STORE:
+                    if (seq==NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
+                        restore_successful = 0;
+                        break;
+                    }
                     xml_node = mxmlNewXML("1.0");
                     alsa_store(seq, xml_node);
                     if( write_xml(filename, xml_node, force) ){
@@ -218,11 +228,15 @@ int main(int argc, char **argv)
                     } else if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
                     break;
                 case RESTORE:
+                    if (seq == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip restoring ALSA connections.\n");
+                        break;
+                    }
                     xml_node = read_xml(filename, xml_node);
                     alsa_restore(seq, xml_node);
                     if(verbose) {
                         if (restore_successful) {
-                            fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+                             if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
                         } else {
                             fprintf(stdout, "aj-snapshot: All ALSA connections could not be restored!\n");
                         }
@@ -247,36 +261,59 @@ int main(int argc, char **argv)
                     }
                     break;
             }
-            snd_seq_close(seq);
+            if (seq != NULL) snd_seq_close(seq);
             break;
         case JACK:
             jackc = jack_initialize(jackc, (action==DAEMON));
+            if (action!=DAEMON) {
+                
+            }
             if(remove_connections){
-                jack_remove_connections(jackc);
-                if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
+                if (jackc!=NULL) {
+                    jack_remove_connections(jackc);
+                    if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
+                } else {
+                    restore_successful = 0;
+                    if(verbose) fprintf(stdout, "aj-snapshot: Did NOT remove JACK connections!\n");
+                }
             }
             switch (action){
                 case STORE:
+                    if (jackc==NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
+                        restore_successful = 0;
+                        break;
+                    }
                     xml_node = mxmlNewXML("1.0");
                     jack_store(jackc, xml_node);
                     if( write_xml(filename, xml_node, force) ){
                         if(verbose) fprintf(stdout, "aj-snapshot: JACK connections stored!\n");
-                    } else if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
+                    } else if (verbose) {
+                        fprintf(stdout, "aj-snapshot: Did NOT store JACK connections!\n");
+                    }
                     mxmlDelete(xml_node);
                     break;
                 case RESTORE:
+                    if (jackc == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip restoring JACK connections.\n");
+                        break;
+                    }
                     xml_node = read_xml(filename, xml_node);
                     jack_restore(jackc, xml_node);
                     mxmlDelete(xml_node);
                     if (restore_successful) {
-                            fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+                            if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
                         } else {
-                            fprintf(stdout, "aj-snapshot: All JACK connections could not be restored!\n");
+                            if(verbose) fprintf(stdout, "aj-snapshot: All JACK connections could NOT be restored!\n");
                         }
                     break;
                 case REMOVE_ONLY:
                     break;
-                case DAEMON:					
+                case DAEMON:
+                     if (jackc == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip monitoring JACK connections.\n");
+                        break;
+                    }					
                     xml_node = read_xml(filename, xml_node);
                     if(verbose) fprintf(stdout, "aj-snapshot: JACK connections monitored!\n");
                     while (daemon_running) {
@@ -300,18 +337,28 @@ int main(int argc, char **argv)
                     mxmlDelete(xml_node);
                     break;
             }
-            break;
-            jack_client_close(jackc);
+            if (jackc != NULL) jack_client_close(jackc);
+            break;           
         case ALSA_JACK:
             jackc = jack_initialize(jackc, (action==DAEMON));
             seq = alsa_initialize(seq);
             if(remove_connections){
-                alsa_remove_connections(seq);
-                jack_remove_connections(jackc);
-                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
+                if (jackc!=NULL && seq != NULL) {
+                    alsa_remove_connections(seq);
+                    jack_remove_connections(jackc);
+                    if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
+                } else {
+                    if(verbose) fprintf(stdout, "aj-snapshot: Did NOT remove ALSA & JACK connections!\n");
+                    restore_successful = 0;
+                }
             }
             switch (action){
                 case STORE:
+                    if (jackc==NULL || seq == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA & JACK connections!\n");
+                        restore_successful = 0;
+                        break;
+                    }
                     xml_node = mxmlNewXML("1.0");
                     alsa_store(seq, xml_node);
                     jack_store(jackc, xml_node);
@@ -321,19 +368,29 @@ int main(int argc, char **argv)
                     mxmlDelete(xml_node);
                     break;
                 case RESTORE:
+                    if (jackc == NULL || seq == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip restoring JACK connections.\n");
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip restoring ALSA connections.\n");
+                        restore_successful = 0;
+                        break;
+                    }
                     xml_node = read_xml(filename, xml_node);
                     alsa_restore(seq, xml_node);
                     jack_restore(jackc, xml_node);
                     mxmlDelete(xml_node);
                     if (restore_successful) {
-                        fprintf(stdout, "aj-snapshot: ALSA & JACK connections restored!\n");
+                         if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
                     } else {
-                        fprintf(stdout, "aj-snapshot: All ALSA & JACK connections could not be restored!\n");
+                        fprintf(stdout, "aj-snapshot: All ALSA & JACK connections could NOT be restored!\n");
                     }
                     break;
                 case REMOVE_ONLY:
                     break;
                 case DAEMON:
+                     if (jackc == NULL || seq == NULL) {
+                        if(verbose) fprintf(stdout, "aj-snapshot: Skip monitoring ALSA & JACK connections.\n");
+                        break;
+                    }	
                     xml_node = read_xml(filename, xml_node);
                     if(verbose) fprintf(stdout, "aj-snapshot: ALSA & JACK connections monitored!\n");
                     while (daemon_running) {
@@ -359,8 +416,8 @@ int main(int argc, char **argv)
                     mxmlDelete(xml_node);
                     break;
             }
-            snd_seq_close(seq);
-            jack_client_close(jackc);
+            if (seq != NULL) snd_seq_close(seq);
+            if (jackc != NULL) jack_client_close(jackc);
             break;
     }
     if (action==DAEMON || restore_successful) {

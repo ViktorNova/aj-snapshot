@@ -46,16 +46,17 @@ jack_client_t* jack_initialize( jack_client_t* jackc, int callbacks_on )
 	jackc = jack_client_open("aj-snapshot", options, NULL);
 
 	if (jackc == NULL) {
-		fprintf(stderr, "aj-snapshot: Warning: Jack server is not running.\n");
+		fprintf(stderr, "aj-snapshot: Jack server is not running.\n");
 		return NULL;
 	}
 
+    jack_on_shutdown(jackc, jack_shutdown, 0);
+
 	if (callbacks_on) {
 		jack_set_graph_order_callback(jackc, jack_graph_order, 0);
-		jack_on_shutdown(jackc, jack_shutdown, 0);
-
+		
 		if (jack_activate (jackc)) {
-			fprintf (stderr, "aj-snapshot: Warning: Jack server seems to be running but is not responding.");
+			fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
 			return NULL;
 		}
 	}
@@ -100,7 +101,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
                 else if (!daemon_running) {
                     if (err == EEXIST) {
                         fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
-					} 
+                    } 
                     else {
                         fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
                         restore_successful = 0;
@@ -151,6 +152,7 @@ void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
 
 void jack_restore( jack_client_t* jackc, mxml_node_t* xml_node )
 {
+   
 	mxml_node_t* jack_node;
 	jack_node = mxmlFindElement(xml_node, xml_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
 	jack_restore_clients(jackc, jack_node);
