@@ -389,6 +389,7 @@ int main(int argc, char **argv)
                     daemon_running = 1;
                     while (daemon_running) {
                         if (jackc == NULL) {
+                            // We should probably wait a moment after jack has closed before trying to do this again?
                             jack_initialize(&jackc, (action==DAEMON));
                         }
 

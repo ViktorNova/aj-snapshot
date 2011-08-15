@@ -61,10 +61,13 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
         if (jack_activate (*jackc)) {
             fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
             // close client line here!
-            *jackc == NULL;
+            *jackc = NULL;
             return;
         }
     }
+    
+    if (verbose && daemon_running) fprintf(stderr, "aj-snapshot: Jack server was started.\n");
+
     return;
 }
 
