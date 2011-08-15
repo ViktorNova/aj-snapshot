@@ -251,10 +251,10 @@ int main(int argc, char **argv)
                         if (reload_xml > 0) {
                             reload_xml = 0;
                             xml_node = read_xml(filename, xml_node);
-			                if(remove_connections){
-				                alsa_remove_connections(seq);
-				                    if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
-			                }
+                            if(remove_connections){
+                                alsa_remove_connections(seq);
+                                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
+                            }
                         }
                         alsa_restore(seq, xml_node);
                         usleep(POLLING_INTERVAL_MS * 1000);
@@ -318,9 +318,9 @@ int main(int argc, char **argv)
                             reload_xml = 0;
                             xml_node = read_xml(filename, xml_node);
 			                if(remove_connections){
-				                jack_remove_connections(jackc);
-				                if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
-			                }
+                                jack_remove_connections(jackc);
+                                if(verbose) fprintf(stdout, "aj-snapshot: all JACK connections removed!\n");
+                            }
                         }
                         pthread_mutex_lock( &callback_lock );
                         if (jack_dirty > 0) {
@@ -395,10 +395,10 @@ int main(int argc, char **argv)
                         if (reload_xml > 0) {
                             reload_xml = 0;
                             xml_node = read_xml(filename, xml_node);
-			                if(remove_connections){
-				                alsa_remove_connections(seq);
-				                jack_remove_connections(jackc);
-				                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
+                            if(remove_connections){
+                                alsa_remove_connections(seq);
+                                jack_remove_connections(jackc);
+                                if(verbose) fprintf(stdout, "aj-snapshot: all ALSA & JACK connections removed!\n");
                             }
                         }
 
