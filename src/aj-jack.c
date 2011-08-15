@@ -27,46 +27,45 @@ int restore_successful;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
-	//fprintf(stdout, "graph reordered\n");
-	pthread_mutex_lock( &callback_lock );
-	jack_dirty++;
-	pthread_mutex_unlock( &callback_lock );
+    //fprintf(stdout, "graph reordered\n");
+    pthread_mutex_lock( &callback_lock );
+    jack_dirty++;
+    pthread_mutex_unlock( &callback_lock );
 }
 
 void jack_shutdown (void * jackc) {
-	fprintf(stdout, "aj-snapshot: Jack server has been shut down.\n");
+    fprintf(stdout, "aj-snapshot: Jack server has been shut down.\n");
 
     jack_client_t** tmp;
     tmp = (jack_client_t**)jackc;
     *tmp = NULL;
-	
+    
 }
 
 
 void jack_initialize( jack_client_t** jackc, int callbacks_on )
 {
-	jack_options_t options = JackNoStartServer;
-	*jackc = jack_client_open("aj-snapshot", options, NULL);
+    jack_options_t options = JackNoStartServer;
+    *jackc = jack_client_open("aj-snapshot", options, NULL);
 
-	if (*jackc == NULL) {
-		if (verbose && !daemon_running) fprintf(stderr, "aj-snapshot: Jack server is not running.\n");
-		return;
-	}
+    if (*jackc == NULL) {
+        if (verbose && !daemon_running) fprintf(stderr, "aj-snapshot: Jack server is not running.\n");
+        return;
+    }
 
     jack_on_shutdown(*jackc, jack_shutdown, jackc);
 
-	if (callbacks_on) {
-		jack_set_graph_order_callback(*jackc, jack_graph_order, 0);
-		
-		if (jack_activate (*jackc)) {
-			fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
+    if (callbacks_on) {
+        jack_set_graph_order_callback(*jackc, jack_graph_order, 0);
+        
+        if (jack_activate (*jackc)) {
+            fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
             // close client line here!
             *jackc == NULL;
-			return;
-		}
-	}
-    if (verbose && daemon_running) fprintf(stderr, "aj-snapshot: Jack server was started.\n");
-	return;
+            return;
+        }
+    }
+    return;
 }
 
 void jack_restore_connections( jack_client_t* jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
@@ -124,119 +123,119 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 
 void jack_restore_ports( jack_client_t* jackc, const char* client_name, mxml_node_t* client_node)
 {
-	mxml_node_t* port_node;
-	const char* port_name;
+    mxml_node_t* port_node;
+    const char* port_name;
 
-	port_node = mxmlFindElement(client_node, client_node, "port", NULL, NULL, MXML_DESCEND_FIRST);
+    port_node = mxmlFindElement(client_node, client_node, "port", NULL, NULL, MXML_DESCEND_FIRST);
 
-	while (port_node){
-		port_name = mxmlElementGetAttr(port_node, "name");
-		jack_restore_connections(jackc, client_name, port_name, port_node);
-		port_node = mxmlFindElement(port_node, client_node, "port", NULL, NULL, MXML_NO_DESCEND);
-	}
+    while (port_node){
+        port_name = mxmlElementGetAttr(port_node, "name");
+        jack_restore_connections(jackc, client_name, port_name, port_node);
+        port_node = mxmlFindElement(port_node, client_node, "port", NULL, NULL, MXML_NO_DESCEND);
+    }
 }
 
 void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
 {
-	mxml_node_t* client_node;
-	const char* client_name;
+    mxml_node_t* client_node;
+    const char* client_name;
 
-	client_node = mxmlFindElement(jack_node, jack_node, "client", NULL, NULL, MXML_DESCEND_FIRST);
+    client_node = mxmlFindElement(jack_node, jack_node, "client", NULL, NULL, MXML_DESCEND_FIRST);
 
-	while (client_node){
-		client_name = mxmlElementGetAttr(client_node, "name");
+    while (client_node){
+        client_name = mxmlElementGetAttr(client_node, "name");
 
-		if( !is_ignored_client(client_name) ){
-			jack_restore_ports(jackc, client_name, client_node);
-		}
-		else if(verbose  && !daemon_running){
-				fprintf(stdout, "Ignoring JACK client %s\n", client_name);
-		}
-		client_node = mxmlFindElement(client_node, jack_node, "client", NULL, NULL, MXML_NO_DESCEND);
-	}
+        if( !is_ignored_client(client_name) ){
+            jack_restore_ports(jackc, client_name, client_node);
+        }
+        else if(verbose  && !daemon_running){
+                fprintf(stdout, "Ignoring JACK client %s\n", client_name);
+        }
+        client_node = mxmlFindElement(client_node, jack_node, "client", NULL, NULL, MXML_NO_DESCEND);
+    }
 }
 
 void jack_restore( jack_client_t* jackc, mxml_node_t* xml_node )
 {
    
-	mxml_node_t* jack_node;
-	jack_node = mxmlFindElement(xml_node, xml_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
-	jack_restore_clients(jackc, jack_node);
+    mxml_node_t* jack_node;
+    jack_node = mxmlFindElement(xml_node, xml_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
+    jack_restore_clients(jackc, jack_node);
 }
 
 void jack_store_connections( jack_client_t* jackc, const char* port_name, mxml_node_t* port_node )
 {
 
-	mxml_node_t* connection_node;
+    mxml_node_t* connection_node;
 
-	jack_port_t* port = jack_port_by_name(jackc, port_name);
-	const char** connected_ports = jack_port_get_all_connections(jackc, port);
+    jack_port_t* port = jack_port_by_name(jackc, port_name);
+    const char** connected_ports = jack_port_get_all_connections(jackc, port);
 
-	if(connected_ports != NULL)
-	{
-		unsigned int i = 0;
-		const char* connected_port = connected_ports[i];
-		char tmp_str[jack_port_name_size()];
-		char* dest_client_name;
+    if(connected_ports != NULL)
+    {
+        unsigned int i = 0;
+        const char* connected_port = connected_ports[i];
+        char tmp_str[jack_port_name_size()];
+        char* dest_client_name;
 
-		while (connected_port) {
-			strcpy(tmp_str, connected_port); // otherwise we change the names of ports in jack !!
-			dest_client_name = strtok(tmp_str, ":");
+        while (connected_port) {
+            strcpy(tmp_str, connected_port); // otherwise we change the names of ports in jack !!
+            dest_client_name = strtok(tmp_str, ":");
 
-			if(!is_ignored_client(dest_client_name)){
-				connection_node = mxmlNewElement(port_node, "connection");
-				mxmlElementSetAttr(connection_node, "port", connected_port);
-			} 
-			else if(verbose){
-					fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
-			}
-			connected_port = connected_ports[++i];
-		}
-	}
+            if(!is_ignored_client(dest_client_name)){
+                connection_node = mxmlNewElement(port_node, "connection");
+                mxmlElementSetAttr(connection_node, "port", connected_port);
+            } 
+            else if(verbose){
+                    fprintf(stdout, "Ignoring connection to JACK client: %s\n", dest_client_name);
+            }
+            connected_port = connected_ports[++i];
+        }
+    }
 }
 
 void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 {
-	mxml_node_t* jack_node = mxmlNewElement(xml_node, "jack");
-	mxml_node_t* client_node;
-	mxml_node_t* port_node;
+    mxml_node_t* jack_node = mxmlNewElement(xml_node, "jack");
+    mxml_node_t* client_node;
+    mxml_node_t* port_node;
 
-	char tmp_str[jack_port_name_size()];
-	char client_name_prev[jack_port_name_size()];
-	const char* client_name;
-	char* port_name;
+    char tmp_str[jack_port_name_size()];
+    char client_name_prev[jack_port_name_size()];
+    const char* client_name;
+    char* port_name;
 
-	if (jackc == NULL) return;
+    if (jackc == NULL) return;
 
-	const char **jack_output_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsOutput);
-	
-	unsigned int i = 0;
-	const char* full_name = jack_output_ports[i];
+    const char **jack_output_ports = jack_get_ports(jackc, NULL, NULL, JackPortIsOutput);
+    
+    unsigned int i = 0;
+    const char* full_name = jack_output_ports[i];
 
-	while (full_name) {
-		strcpy(tmp_str, full_name); // otherwise we change the names of ports in jack !!
+    while (full_name) {
+        strcpy(tmp_str, full_name); // otherwise we change the names of ports in jack !!
 
-		client_name = strtok(tmp_str, ":");
-		port_name = strtok(NULL, "\0");
+        client_name = strtok(tmp_str, ":");
+        port_name = strtok(NULL, "\0");
 
-		if( !is_ignored_client(client_name) ){
-			if ( strcmp(client_name_prev, client_name) ){
-				client_node = mxmlNewElement(jack_node, "client");
-				mxmlElementSetAttr(client_node, "name", client_name);
-				strcpy(client_name_prev, client_name);
-			}
-			port_node = mxmlNewElement(client_node, "port");
-			mxmlElementSetAttr(port_node, "name", port_name);
-			jack_store_connections(jackc, full_name, port_node);
-		}
-		else {
-			if( strcmp(client_name_prev, client_name) ){
-				if(verbose) 
-					fprintf(stdout, "Ignoring JACK client: %s\n", client_name);
-				strcpy(client_name_prev, client_name);
-			}
-		}
+        if( !is_ignored_client(client_name) ){
+            if ( strcmp(client_name_prev, client_name) ){
+                client_node = mxmlNewElement(jack_node, "client");
+                mxmlElementSetAttr(client_node, "name", client_name);
+                strcpy(client_name_prev, client_name);
+            }
+            port_node = mxmlNewElement(client_node, "port");
+            mxmlElementSetAttr(port_node, "name", port_name);
+            jack_store_connections(jackc, full_name, port_node);
+        }
+        else {
+            if( strcmp(client_name_prev, client_name) ){
+                if(verbose) 
+                    fprintf(stdout, "Ignoring JACK client: %s\n", client_name);
+                strcpy(client_name_prev, client_name);
+            }
+        }
 
-		full_name = jack_output_ports[++i];
-	}
+        full_name = jack_output_ports[++i];
+    }
 }
