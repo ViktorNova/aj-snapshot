@@ -74,10 +74,11 @@ static const struct option long_option[] = {
 // Nasty globals
 int verbose = 1;
 int daemon_running = 0;
-int jack_dirty = 1;
+int jack_dirty = 0;
 int restore_successful = 1; 
 int reload_xml = 0;
 pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t shutdown_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 
@@ -296,7 +297,7 @@ int main(int argc, char **argv)
                         break;
                     }
                     xml_node = read_xml(filename, xml_node);
-                    jack_restore(jackc, xml_node);
+                    jack_restore(&jackc, xml_node);
                     mxmlDelete(xml_node);
                     if (restore_successful) {
                             if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
@@ -326,7 +327,7 @@ int main(int argc, char **argv)
                         if (jack_dirty > 0) {
                             jack_dirty = 0;
                             pthread_mutex_unlock( &callback_lock );
-                            jack_restore(jackc, xml_node);
+                            jack_restore(&jackc, xml_node);
                         } 
                         else pthread_mutex_unlock( &callback_lock );
                         usleep(POLLING_INTERVAL_MS * 1000);
@@ -373,7 +374,7 @@ int main(int argc, char **argv)
                     }
                     xml_node = read_xml(filename, xml_node);
                     alsa_restore(seq, xml_node);
-                    jack_restore(jackc, xml_node);
+                    jack_restore(&jackc, xml_node);
                     mxmlDelete(xml_node);
                     if (restore_successful) {
                          if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
@@ -409,10 +410,10 @@ int main(int argc, char **argv)
                         if (jack_dirty > 0) {
                             jack_dirty = 0;
                             pthread_mutex_unlock( &callback_lock );
-                            jack_restore(jackc, xml_node);
+                            jack_restore(&jackc, xml_node);
                         } 
                         else pthread_mutex_unlock( &callback_lock );
-                    
+                        
                         usleep(POLLING_INTERVAL_MS * 1000);
                     }
                     mxmlDelete(xml_node);

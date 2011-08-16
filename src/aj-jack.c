@@ -23,11 +23,11 @@ extern int verbose;
 extern int daemon_running;
 extern int jack_dirty;
 extern pthread_mutex_t callback_lock;
+extern pthread_mutex_t shutdown_callback_lock;
 int restore_successful;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
-    //fprintf(stdout, "graph reordered\n");
     pthread_mutex_lock( &callback_lock );
     jack_dirty++;
     pthread_mutex_unlock( &callback_lock );
@@ -38,8 +38,11 @@ void jack_shutdown (void * jackc) {
 
     jack_client_t** tmp;
     tmp = (jack_client_t**)jackc;
+
+    pthread_mutex_lock( &shutdown_callback_lock );
     *tmp = NULL;
-    
+    pthread_mutex_unlock( &shutdown_callback_lock );    
+
 }
 
 
@@ -60,7 +63,7 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
         
         if (jack_activate (*jackc)) {
             fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
-            // close client line here!
+            jack_client_close(*jackc); 
             *jackc = NULL;
             return;
         }
@@ -71,7 +74,7 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
     return;
 }
 
-void jack_restore_connections( jack_client_t* jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
+void jack_restore_connections( jack_client_t** jackc, const char* client_name, const char* port_name, mxml_node_t* port_node )
 {
     mxml_node_t* connection_node;
     const char* dest_port;
@@ -92,11 +95,15 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
 
         if(!is_ignored_client(dest_client_name)){
             int err;
-            if (jackc == NULL) {
+
+            pthread_mutex_lock( &shutdown_callback_lock );
+            if (*jackc == NULL) {
                 err = ENOENT;
             } else {
-                err = jack_connect(jackc, src_port, dest_port);
+                err = jack_connect(*jackc, src_port, dest_port);
             }
+            pthread_mutex_unlock( &shutdown_callback_lock );
+
             if (err == 0) {
                 pthread_mutex_lock( &callback_lock );
                 jack_dirty--;
@@ -124,7 +131,7 @@ void jack_restore_connections( jack_client_t* jackc, const char* client_name, co
     }
 }
 
-void jack_restore_ports( jack_client_t* jackc, const char* client_name, mxml_node_t* client_node)
+void jack_restore_ports( jack_client_t** jackc, const char* client_name, mxml_node_t* client_node)
 {
     mxml_node_t* port_node;
     const char* port_name;
@@ -138,7 +145,7 @@ void jack_restore_ports( jack_client_t* jackc, const char* client_name, mxml_nod
     }
 }
 
-void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
+void jack_restore_clients( jack_client_t** jackc, mxml_node_t* jack_node )
 {
     mxml_node_t* client_node;
     const char* client_name;
@@ -158,7 +165,7 @@ void jack_restore_clients( jack_client_t* jackc, mxml_node_t* jack_node )
     }
 }
 
-void jack_restore( jack_client_t* jackc, mxml_node_t* xml_node )
+void jack_restore( jack_client_t** jackc, mxml_node_t* xml_node )
 {
    
     mxml_node_t* jack_node;

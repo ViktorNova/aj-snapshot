@@ -23,6 +23,6 @@
 
 void jack_initialize( jack_client_t** jackc, int callbacks_on );
 void jack_store( jack_client_t* jackc, mxml_node_t* xml_node );
-void jack_restore( jack_client_t* jackc, mxml_node_t* xml_node );
+void jack_restore( jack_client_t** jackc, mxml_node_t* xml_node );
 
 #endif
