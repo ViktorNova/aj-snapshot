@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT([aj-snapshot], [0.9.4], [lievenmoors@gmail.com])
+AC_INIT([aj-snapshot], [0.9.5], [lievenmoors@gmail.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/aj-snapshot.c])
 AC_PREFIX_DEFAULT(/usr/local)
