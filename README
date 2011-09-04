@@ -39,19 +39,41 @@ while clients and ports appear.
 
 Example:       aj-snapshot -d connections.xml
 
+The daemon restores connections every 200 ms. 
+(defined by POLLING_INTERVAL_MS in aj-snapshot.c)
+
+You can ask the daemon to reload the XML file by sending it the 
+HUP signal. This makes it possible to add new connections while 
+the daemon is running, store the connection state by overwriting 
+the existing XML file with another instance of aj-snapshot,
+and reload the file by sending the HUP signal to the daemon.
+When combining '-d' and '-x' options, all connections are removed
+before the daemon reloads the XML file.
+
+Example:    aj-snapshot -dx connections.xml &
+            ... add more connections ...
+            aj-snapshot -f connections.xml
+            kill -HUP $(pidof aj-snapshot)
+
 ----------------------------------------------------------------
 
 You can also limit storing/restoring connections to a specific
 subsystem (ALSA or JACK) with the options '-a, --alsa' and 
 '-j, --jack'.
 
-Example:       aj-snapshot -j connections.xml 
+Examples:
 
-stores JACK connections only to connections.xml
+store JACK connections only to connections.xml:
 
-	       aj-snapshot -ra connections.xml
+            aj-snapshot -j connections.xml 
 
-restores ALSA connections only from connections.xml
+restore ALSA connections only from connections.xml:
+
+	        aj-snapshot -ra connections.xml
+
+run in daemon mode for ALSA connections only:
+
+            aj-snapshot -da connections.xml &
 
 ---------------------------------------------------------------
 
