@@ -101,9 +101,6 @@ void exit_cli(int sig) {
 }
 
 void reload_xml_file(int sig) {
-    if (verbose) {
-        fprintf(stdout, "\rreloading xml!\n");
-    }
     reload_xml = 1;
 }
 
@@ -251,6 +248,7 @@ int main(int argc, char **argv)
                     while (daemon_running) {
                         if (reload_xml > 0) {
                             reload_xml = 0;
+                            if(verbose) fprintf(stdout, "reloading XML file: %s!\n", filename);
                             xml_node = read_xml(filename, xml_node);
                             if(remove_connections){
                                 alsa_remove_connections(seq);
@@ -317,6 +315,7 @@ int main(int argc, char **argv)
                         }	
                         if (reload_xml > 0) {
                             reload_xml = 0;
+                            if(verbose) fprintf(stdout, "reloading XML file: %s!\n", filename);
                             xml_node = read_xml(filename, xml_node);
 			                if(remove_connections){
                                 jack_remove_connections(jackc);
@@ -396,6 +395,7 @@ int main(int argc, char **argv)
 
                         if (reload_xml > 0) {
                             reload_xml = 0;
+                            if(verbose) fprintf(stdout, "reloading XML file: %s!\n", filename);
                             xml_node = read_xml(filename, xml_node);
                             if(remove_connections){
                                 alsa_remove_connections(seq);
