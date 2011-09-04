@@ -13,3 +13,5 @@ Make ignoring clients work in both ways. Now connections made to ignored clients
 Make the -a and -j flags work together as expected, when they are combined.
 Fixed bug where aj-snapshot would not restore connections to a2jmidid ports.
 Refactoring of ignore-clients code.
+0.9.5
+Added daemon mode.
