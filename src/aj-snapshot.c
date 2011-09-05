@@ -233,7 +233,7 @@ int main(int argc, char **argv)
                     alsa_restore(seq, xml_node);
                     if(verbose) {
                         if (restore_successful) {
-                             if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
+                            fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
                         } else {
                             fprintf(stdout, "aj-snapshot: All ALSA connections could not be restored!\n");
                         }
@@ -297,11 +297,13 @@ int main(int argc, char **argv)
                     xml_node = read_xml(filename, xml_node);
                     jack_restore(&jackc, xml_node);
                     mxmlDelete(xml_node);
-                    if (restore_successful) {
-                            if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
+                    if (verbose) {
+                        if(restore_successful){ 
+                            fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
                         } else {
-                            if(verbose) fprintf(stdout, "aj-snapshot: All JACK connections could NOT be restored!\n");
+                            fprintf(stdout, "aj-snapshot: All JACK connections could NOT be restored!\n");
                         }
+                    }
                     break;
                 case REMOVE_ONLY:
                     break;
@@ -375,10 +377,12 @@ int main(int argc, char **argv)
                     alsa_restore(seq, xml_node);
                     jack_restore(&jackc, xml_node);
                     mxmlDelete(xml_node);
-                    if (restore_successful) {
-                         if(verbose) fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
-                    } else {
-                        fprintf(stdout, "aj-snapshot: All ALSA & JACK connections could NOT be restored!\n");
+                    if (verbose) {
+                        if(restore_successful){ 
+                            fprintf(stdout, "aj-snapshot: SUCCESSFUL snapshot restore!\n");
+                        } else {
+                            fprintf(stdout, "aj-snapshot: All ALSA & JACK connections could NOT be restored!\n");
+                        }
                     }
                     break;
                 case REMOVE_ONLY:
