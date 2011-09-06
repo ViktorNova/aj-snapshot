@@ -90,7 +90,7 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
     while (connection_node){
         dest_port = mxmlElementGetAttr(connection_node, "port");
 
-        strcpy(tmp_str, dest_port); // otherwise we change the names of ports in jack !!
+        strcpy(tmp_str, dest_port); // dest_port is 'const char*'
         dest_client_name = strtok(tmp_str, ":");
 
         if(!is_ignored_client(dest_client_name)){
