@@ -45,7 +45,7 @@ static void usage(void)
 } 
 
 enum sys {
-    ALSA, JACK, ALSA_JACK
+    NONE, ALSA, JACK, ALSA_JACK // Bitwise OR of ALSA and JACK is ALSA_JACK
 };
 
 enum act {
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     int try_remove = 0;
     int remove_connections = 0;
     int force = 0;
-    enum sys system = ALSA_JACK;
+    enum sys system = NONE;
     enum act action = STORE;
     static const char *filename;
     snd_seq_t* seq = NULL;
@@ -116,12 +116,10 @@ int main(int argc, char **argv)
         switch (c){
 
         case 'a':
-            if(system == JACK) system = ALSA_JACK;
-            else system = ALSA;
+            system |= ALSA;
             break;
         case 'j':
-            if(system == ALSA) system = ALSA_JACK;
-            else system = JACK;
+            system |= JACK;
             break;
         case 'r':
             action = RESTORE;
@@ -154,6 +152,8 @@ int main(int argc, char **argv)
             return 1;
         }
     }
+
+    if (system == NONE) system = ALSA_JACK; // Default when no specific system has been specified.
 
     if (argc == (optind + 1)) {
         filename = argv[optind];
