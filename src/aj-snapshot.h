@@ -27,8 +27,16 @@
 #include <alsa/asoundlib.h>
 #include <jack/jack.h>
 #include <mxml.h>
+#include <signal.h>
+#include <pthread.h>
+
+#include "aj-alsa.h"
+#include "aj-file.h"
+#include "aj-jack.h"
+#include "aj-remove.h"
 
 #define IGNORED_CLIENTS_MAX 50
+#define POLLING_INTERVAL_MS 200
 
 int is_ignored_client(const char *name); // function to check if string is name of ignored client.
 

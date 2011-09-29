@@ -18,14 +18,7 @@
 /************************************************************************/
 
 #include "aj-snapshot.h"
-#include "aj-alsa.h"
-#include "aj-file.h"
-#include "aj-jack.h"
-#include "aj-remove.h"
-#include "signal.h"
-#include "pthread.h"
 
-#define POLLING_INTERVAL_MS 200
 
 static void usage(void)
 {
