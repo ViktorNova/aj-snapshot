@@ -106,6 +106,7 @@ int main(int argc, char **argv)
     int remove_connections = 0;
     int force = 0;
     enum sys system = NONE;
+    enum sys system_ready = NONE; // When we asked for a system and got it (bitwise or'd).
     enum act action = STORE;
     static const char *filename;
     snd_seq_t* seq = NULL;
@@ -213,27 +214,27 @@ int main(int argc, char **argv)
     if ((system & ALSA) == ALSA) {
         seq = alsa_initialize(seq);
         if(seq){
+            system_ready |= ALSA;
             if(remove_connections){
                 alsa_remove_connections(seq);
                 VERBOSE("aj-snapshot: all ALSA connections removed!\n");
             }
         } 
-        else exit_success = 0;
     }
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
         if(jackc){
+            system_ready |= JACK;
             if (remove_connections) {
                 jack_remove_connections(jackc);
                 VERBOSE("aj-snapshot: all JACK connections removed!\n");
             }
         } 
-        else exit_success = 0;
     }
 
     if(action != DAEMON){
         // If not in daemon mode, store/restore snapshots
-        if ((system & ALSA) == ALSA) {
+        if ((system_ready & ALSA) == ALSA) {
             switch (action){
                 case STORE:
                     alsa_store(seq, xml_node);
@@ -244,7 +245,7 @@ int main(int argc, char **argv)
             }
         }
 
-        if ((system & JACK) == JACK) {
+        if ((system_ready & JACK) == JACK) {
             switch (action){
                 case STORE:
                     jack_store(jackc, xml_node);
@@ -267,18 +268,18 @@ int main(int argc, char **argv)
             if (reload_xml > 0) { // Reload XML if triggered with HUP signal
                 reload_xml = 0;
                 xml_node = read_xml(filename, xml_node);
-                if ((system & ALSA) == ALSA) {
+                if ((system_ready & ALSA) == ALSA) {
                     if(remove_connections){ 
                         alsa_remove_connections(seq);
                     }
                 }
-                if ((system & JACK) == JACK) {
+                if ((system_ready & JACK) == JACK) {
                     if(remove_connections){ 
                         jack_remove_connections(jackc);
                     }
                 }
             }
-            if ((system & ALSA) == ALSA) {
+            if ((system_ready & ALSA) == ALSA) {
                 alsa_restore(seq, xml_node);
             }
             if ((system & JACK) == JACK) {
