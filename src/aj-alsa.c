@@ -21,7 +21,7 @@
 
 extern int verbose;
 extern int daemon_running;
-int restore_successful;
+int exit_success;
 
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {
@@ -173,20 +173,20 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 						else  { 
                             fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
 							        client_name, dest_client_name);
-                            restore_successful = 0;
+                            exit_success = 0;
                         }
 					}
 				}
 				else if(verbose && !daemon_running) {
                     fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
 					        dest_client_name, client_name);
-                    restore_successful = 0;
+                    exit_success = 0;
                 }
 			}
 			else if(verbose  && !daemon_running) { 
                 fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
     					client_name, dest_client_name);
-                restore_successful = 0;
+                exit_success = 0;
             }
 		}
 		else if(verbose){
@@ -246,25 +246,25 @@ void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node )
 	alsa_restore_clients( seq, alsa_node );
 }
 
-snd_seq_t* alsa_initialize( snd_seq_t* seq )
+snd_seq_t*  alsa_initialize( snd_seq_t* seq )
 {
 	int client;
 
 	if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
-		fprintf(stderr, "can't open sequencer\n");
+		fprintf(stderr, "can't open ALSA sequencer\n");
 		return NULL;
 	}
 
 	if ((client = snd_seq_client_id(seq)) < 0) {
 		snd_seq_close(seq);
-		fprintf(stderr, "can't get client id\n");
+		fprintf(stderr, "can't get ALSA client id\n");
 		return NULL;
 	}
 
 	if (snd_seq_set_client_name(seq, "aj-snapshot") < 0) {
 		snd_seq_close(seq);
-		fprintf(stderr, "can't set client info\n");
+		fprintf(stderr, "can't set ALSA client info\n");
 		return NULL;
 	}
-	return seq;
+    return seq;
 }

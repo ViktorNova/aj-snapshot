@@ -22,15 +22,15 @@
 extern int verbose;
 extern int daemon_running;
 extern int jack_dirty;
-extern pthread_mutex_t callback_lock;
+extern pthread_mutex_t graph_order_callback_lock;
 extern pthread_mutex_t shutdown_callback_lock;
-int restore_successful;
+int exit_success;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
-    pthread_mutex_lock( &callback_lock );
+    pthread_mutex_lock( &graph_order_callback_lock );
     jack_dirty++;
-    pthread_mutex_unlock( &callback_lock );
+    pthread_mutex_unlock( &graph_order_callback_lock );
 }
 
 void jack_shutdown (void * jackc) {
@@ -105,9 +105,9 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
             pthread_mutex_unlock( &shutdown_callback_lock );
 
             if (err == 0) {
-                pthread_mutex_lock( &callback_lock );
+                pthread_mutex_lock( &graph_order_callback_lock );
                 jack_dirty--;
-                pthread_mutex_unlock( &callback_lock );
+                pthread_mutex_unlock( &graph_order_callback_lock );
             }
             if(verbose){
                 if (err == 0) {
@@ -119,7 +119,7 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
                     } 
                     else {
                         fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
-                        restore_successful = 0;
+                        exit_success = 0;
                     }
                 }
             }

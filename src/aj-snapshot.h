@@ -38,6 +38,8 @@
 #define IGNORED_CLIENTS_MAX 50
 #define POLLING_INTERVAL_MS 200
 
+#define VERBOSE(str) if(verbose) fprintf(stdout, str)
+
 int is_ignored_client(const char *name); // function to check if string is name of ignored client.
 
 #endif

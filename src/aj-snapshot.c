@@ -49,7 +49,7 @@ enum sys {
 };
 
 enum act {
-    STORE, RESTORE, REMOVE_ONLY, DAEMON
+    REMOVE_ONLY, STORE, RESTORE, DAEMON
 };
 
 static const struct option long_option[] = {
@@ -65,17 +65,19 @@ static const struct option long_option[] = {
 };
 
 // Nasty globals
+
 int verbose = 1;
 int daemon_running = 0;
 int jack_dirty = 0;
-int restore_successful = 1; 
 int reload_xml = 0;
-pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
+int ic_n = 0; // number of ignored clients.
+char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
+int exit_success = 1; 
+
+pthread_mutex_t graph_order_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
-char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
-
-int ic_n = 0; // number of ignored clients.
+//////////////////////
 
 int is_ignored_client(const char *name) // function to check if string is name of ignored client.
 {
@@ -155,11 +157,11 @@ int main(int argc, char **argv)
 
     if (system == NONE) system = ALSA_JACK; // Default when no specific system has been specified.
 
-    if (argc == (optind + 1)) {
+    if (argc == (optind + 1)) { // If something is left after parsing options, it must be the file
         filename = argv[optind];
     }
-    else if ((argc == optind) && try_remove){
-        action = REMOVE_ONLY;
+    else if ((argc == optind) && try_remove){ 
+        action = REMOVE_ONLY; // To make sure action is not STORE or RESTORE
     }
     else {
         fprintf(stderr, " -------------------------------------------------------------------\n");
@@ -173,10 +175,12 @@ int main(int argc, char **argv)
         if (action != STORE){
             remove_connections = 1;
         }
-        else if(verbose) fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
+        else {
+            if(verbose) fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
+        }
 	}
 
-    if (action==DAEMON) {
+    if (action == DAEMON) {
         struct sigaction sig_int_handler;
         struct sigaction sig_hup_handler;
 
@@ -192,11 +196,141 @@ int main(int argc, char **argv)
         sigaction(SIGHUP, &sig_hup_handler, NULL);
     }
 
+    // Get XML node first:
+
+    switch (action){
+        case STORE:
+            xml_node = mxmlNewXML("1.0");
+            break;
+        case RESTORE:
+        case DAEMON:
+            xml_node = read_xml(filename, xml_node);
+            break;
+    }
+
+    // Initialize clients with ALSA and JACK, and remove connections if necessary.
+
+    if ((system & ALSA) == ALSA) {
+        seq = alsa_initialize(seq);
+        if(seq){
+            if(remove_connections){
+                alsa_remove_connections(seq);
+                VERBOSE("aj-snapshot: all ALSA connections removed!\n");
+            }
+        } 
+        else exit_success = 0;
+    }
+    if ((system & JACK) == JACK) {
+        jack_initialize(&jackc, (action == DAEMON));
+        if(jackc){
+            if (remove_connections) {
+                jack_remove_connections(jackc);
+                VERBOSE("aj-snapshot: all JACK connections removed!\n");
+            }
+        } 
+        else exit_success = 0;
+    }
+
+    if(action != DAEMON){
+        // If not in daemon mode, store/restore snapshots
+        if ((system & ALSA) == ALSA) {
+            switch (action){
+                case STORE:
+                    alsa_store(seq, xml_node);
+                    break;
+                case RESTORE:
+                    alsa_restore(seq, xml_node);
+                    break;
+            }
+        }
+
+        if ((system & JACK) == JACK) {
+            switch (action){
+                case STORE:
+                    jack_store(jackc, xml_node);
+                    break;
+                case RESTORE:
+                    jack_restore(&jackc, xml_node);
+                    break;
+            }
+        }
+
+        // Write file when storing:
+        if(action == STORE){
+            write_xml(filename, xml_node, force);
+        }
+    }
+    else {
+        // Run Daemon
+        daemon_running = 1;
+        while (daemon_running) {
+            if (reload_xml > 0) { // Reload XML if triggered with HUP signal
+                reload_xml = 0;
+                xml_node = read_xml(filename, xml_node);
+                if ((system & ALSA) == ALSA) {
+                    if(remove_connections){ 
+                        alsa_remove_connections(seq);
+                    }
+                }
+                if ((system & JACK) == JACK) {
+                    if(remove_connections){ 
+                        jack_remove_connections(jackc);
+                    }
+                }
+            }
+            if ((system & ALSA) == ALSA) {
+                alsa_restore(seq, xml_node);
+            }
+            if ((system & JACK) == JACK) {
+                if (jackc == NULL) { // Make sure jack is up.
+                    jack_initialize(&jackc, (action==DAEMON));
+                }	
+                pthread_mutex_lock( &graph_order_callback_lock );
+
+                if (jack_dirty > 0) { // Only restore when connections have changed
+                    jack_dirty = 0;
+                    pthread_mutex_unlock( &graph_order_callback_lock );
+                    jack_restore(&jackc, xml_node);
+                }
+                else pthread_mutex_unlock( &graph_order_callback_lock );
+            }
+            usleep(POLLING_INTERVAL_MS * 1000);
+        }
+    }
+
+    // Cleanup xml_node:
+    if(xml_node) mxmlDelete(xml_node);
+
+    // Close ALSA and JACK clients if necessary.
+    if (seq != NULL) snd_seq_close(seq);
+    if (jackc != NULL) jack_client_close(jackc);
+
+    // Exit
+
+    if (action == DAEMON || exit_success) {
+        exit(EXIT_SUCCESS);
+    }
+    exit(EXIT_FAILURE);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
     switch (system) {
         case ALSA:
-            seq = alsa_initialize(seq);
+            //seq = alsa_initialize(seq);
             if(remove_connections){
-                 if (seq!=NULL) {
+                 if (seq != NULL) {
                     alsa_remove_connections(seq);
                     if(verbose) fprintf(stdout, "aj-snapshot: all ALSA connections removed!\n");
                 } else {
@@ -206,7 +340,7 @@ int main(int argc, char **argv)
             }
             switch (action){
                 case STORE:
-                    if (seq==NULL) {
+                    if (seq == NULL) {
                         if(verbose) fprintf(stdout, "aj-snapshot: Did NOT store ALSA connections!\n");
                         restore_successful = 0;
                         break;
@@ -256,7 +390,7 @@ int main(int argc, char **argv)
             if (seq != NULL) snd_seq_close(seq);
             break;
         case JACK:
-            jack_initialize(&jackc, (action==DAEMON));
+            //jack_initialize(&jackc, (action==DAEMON));
             if(remove_connections){
                 if (jackc!=NULL) {
                     jack_remove_connections(jackc);
@@ -332,8 +466,8 @@ int main(int argc, char **argv)
             if (jackc != NULL) jack_client_close(jackc);
             break;           
         case ALSA_JACK:
-            jack_initialize(&jackc, (action==DAEMON));
-            seq = alsa_initialize(seq);
+            //jack_initialize(&jackc, (action==DAEMON));
+            //seq = alsa_initialize(seq);
             if(remove_connections){
                 if (jackc!=NULL && seq != NULL) {
                     alsa_remove_connections(seq);
@@ -424,4 +558,4 @@ int main(int argc, char **argv)
         exit(EXIT_SUCCESS);
     }
     exit(EXIT_FAILURE);
-}
+}*/
