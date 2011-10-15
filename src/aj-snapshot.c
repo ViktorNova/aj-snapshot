@@ -222,6 +222,10 @@ int main(int argc, char **argv)
                 VERBOSE("aj-snapshot: all ALSA connections removed!\n");
             }
         } 
+        else {
+            fprintf(stderr, "aj-snapshot: could not initialize ALSA!");
+            exit_success = 0;
+        }
     }
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
@@ -232,6 +236,10 @@ int main(int argc, char **argv)
                 VERBOSE("aj-snapshot: all JACK connections removed!\n");
             }
         } 
+        else {
+            fprintf(stderr, "aj-snapshot: could not initialize JACK!");
+            exit_success = 0;
+        }
     }
 
     if(action != DAEMON){
