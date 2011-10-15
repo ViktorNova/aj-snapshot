@@ -179,7 +179,7 @@ int main(int argc, char **argv)
             remove_connections = 1;
         }
         else {
-            if(verbose) fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
+            fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
         }
 	}
 
