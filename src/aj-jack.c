@@ -69,7 +69,7 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
         }
     }
     
-    if (verbose && daemon_running) fprintf(stderr, "aj-snapshot: Jack server was started.\n");
+    if (verbose && daemon_running) fprintf(stdout, "aj-snapshot: Jack server was started.\n");
 
     return;
 }
