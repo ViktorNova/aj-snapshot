@@ -24,7 +24,7 @@ extern int daemon_running;
 extern int jack_dirty;
 extern pthread_mutex_t graph_order_callback_lock;
 extern pthread_mutex_t shutdown_callback_lock;
-int exit_success;
+int jack_success;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
@@ -119,7 +119,7 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
                     } 
                     else {
                         fprintf(stdout, "Failed to connect port '%s' to '%s'!\n", src_port, dest_port);
-                        exit_success = 0;
+                        jack_success = 0;
                     }
                 }
             }

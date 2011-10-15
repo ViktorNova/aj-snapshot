@@ -74,7 +74,8 @@ int verbose = 1;
 int jack_dirty = 0;
 int ic_n = 0; // number of ignored clients.
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
-int exit_success = 1; 
+int alsa_success = 1; 
+int jack_success = 1; 
 
 pthread_mutex_t graph_order_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_callback_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -107,13 +108,15 @@ int main(int argc, char **argv)
     int try_remove = 0;
     int remove_connections = 0;
     int force = 0;
-    enum sys system = NONE;
+    enum sys system = NONE; // The system(s) we asked for.
     enum sys system_ready = NONE; // When we asked for a system and got it (bitwise or'd).
+    enum sys system_failed = NONE; // When we asked for a system and didn't get it (bitwise or'd).
     enum act action = STORE;
     static const char *filename;
     snd_seq_t* seq = NULL;
     jack_client_t* jackc = NULL;
     mxml_node_t* xml_node = NULL;
+    int exit_success = 1;
 	
 
     while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
@@ -211,30 +214,72 @@ int main(int argc, char **argv)
             break;
     }
 
-    // Initialize clients with ALSA and JACK, and remove connections if necessary.
+    // Initialize clients with ALSA and JACK.
 
     if ((system & ALSA) == ALSA) {
         seq = alsa_initialize(seq);
-        if(seq){
+        if (seq){
             system_ready |= ALSA;
-            if(remove_connections){
-                alsa_remove_connections(seq);
-                VERBOSE("aj-snapshot: all ALSA connections removed.\n");
-            }
         } 
-        else exit_success = 0;
+        else {
+            switch (action){
+                case STORE:
+                    VERBOSE("aj-snapshot: will NOT store ALSA connections!\n");
+                    break;
+                case RESTORE:
+                    VERBOSE("aj-snapshot: will NOT restore ALSA connections!\n");
+                    break;
+            }
+            exit_success = 0;
+        }
     }
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
         if(jackc){
             system_ready |= JACK;
-            if (remove_connections) {
-                jack_remove_connections(jackc);
-                VERBOSE("aj-snapshot: all JACK connections removed.\n");
-            }
         } 
-        else exit_success = 0;
+        else {
+            switch (action){
+                case STORE:
+                    VERBOSE("aj-snapshot: will NOT store JACK connections!\n");
+                    break;
+                case RESTORE:
+                    VERBOSE("aj-snapshot: will NOT restore JACK connections!\n");
+                    break;
+            }
+            exit_success = 0;
+        }
     }
+
+    // xor: only true if combining a 1 and a 0
+    // Result indicates that we asked for ALSA or JACK, and couldn't initialize.
+    // It should not be possible that a system is initialized when we didn't ask for it.
+    // We need this to distinguish between the cases:
+    // - we didn't ask for a system, and it didn't initialize
+    // - we asked for system, but we couldn't initialize
+
+    system_failed = system ^ system_ready;
+
+    // Remove connections
+
+    if (remove_connections){
+
+        if ((system_ready & ALSA) == ALSA) {
+            alsa_remove_connections(seq);
+            VERBOSE("aj-snapshot: all ALSA connections removed.\n");
+        } 
+        if ((system_failed & ALSA) == ALSA)
+            VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
+
+        if ((system_ready & JACK) == JACK) {
+            jack_remove_connections(jackc);
+            VERBOSE("aj-snapshot: all JACK connections removed.\n");
+        }
+        if ((system_failed & JACK) == JACK) 
+            VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
+    }
+
+    // STORE/RESTORE CONNECTIONS
 
     if(action != DAEMON){
         // If not in daemon mode, store/restore snapshots
@@ -242,9 +287,18 @@ int main(int argc, char **argv)
             switch (action){
                 case STORE:
                     alsa_store(seq, xml_node);
+                    VERBOSE("aj-snapshot: ALSA connections stored!\n");
                     break;
                 case RESTORE:
                     alsa_restore(seq, xml_node);
+                    if(verbose){
+                        if(alsa_success){ 
+                            fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+                        } else {
+                            fprintf(stdout, "aj-snapshot: all ALSA connections could not be restored!\n");
+                            exit_success = 0;
+                        }
+                    }
                     break;
             }
         }
@@ -253,9 +307,18 @@ int main(int argc, char **argv)
             switch (action){
                 case STORE:
                     jack_store(jackc, xml_node);
+                    VERBOSE("aj-snapshot: JACK connections stored!\n");
                     break;
                 case RESTORE:
                     jack_restore(&jackc, xml_node);
+                    if(verbose){
+                        if(jack_success){ 
+                            fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+                        } else {
+                            fprintf(stdout, "aj-snapshot: all JACK connections could not be restored!\n");
+                            exit_success = 0;
+                        }
+                    }
                     break;
             }
         }
