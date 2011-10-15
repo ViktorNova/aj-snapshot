@@ -289,7 +289,7 @@ int main(int argc, char **argv)
             }
             if ((system & JACK) == JACK) {
                 if (jackc == NULL) { // Make sure jack is up.
-                    jack_initialize(&jackc, (action==DAEMON));
+                    jack_initialize(&jackc, (action==DAEMON)); //TODO: remove connections after initialize.
                 } 
                 pthread_mutex_lock( &graph_order_callback_lock );
 
