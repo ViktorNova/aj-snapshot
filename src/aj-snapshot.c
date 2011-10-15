@@ -219,13 +219,10 @@ int main(int argc, char **argv)
             system_ready |= ALSA;
             if(remove_connections){
                 alsa_remove_connections(seq);
-                VERBOSE("aj-snapshot: all ALSA connections removed!\n");
+                VERBOSE("aj-snapshot: all ALSA connections removed.\n");
             }
         } 
-        else {
-            fprintf(stderr, "aj-snapshot: could not initialize ALSA!");
-            exit_success = 0;
-        }
+        else exit_success = 0;
     }
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
@@ -233,13 +230,10 @@ int main(int argc, char **argv)
             system_ready |= JACK;
             if (remove_connections) {
                 jack_remove_connections(jackc);
-                VERBOSE("aj-snapshot: all JACK connections removed!\n");
+                VERBOSE("aj-snapshot: all JACK connections removed.\n");
             }
         } 
-        else {
-            fprintf(stderr, "aj-snapshot: could not initialize JACK!");
-            exit_success = 0;
-        }
+        else exit_success = 0;
     }
 
     if(action != DAEMON){
@@ -277,6 +271,7 @@ int main(int argc, char **argv)
         while (daemon_running) {
             if (reload_xml > 0) { // Reload XML if triggered with HUP signal
                 reload_xml = 0;
+                if(verbose) fprintf(stdout, "aj-snapshot: reloading XML file: %s\n", filename);
                 xml_node = read_xml(filename, xml_node);
                 if ((system_ready & ALSA) == ALSA) {
                     if(remove_connections){ 
@@ -295,7 +290,7 @@ int main(int argc, char **argv)
             if ((system & JACK) == JACK) {
                 if (jackc == NULL) { // Make sure jack is up.
                     jack_initialize(&jackc, (action==DAEMON));
-                }	
+                } 
                 pthread_mutex_lock( &graph_order_callback_lock );
 
                 if (jack_dirty > 0) { // Only restore when connections have changed
