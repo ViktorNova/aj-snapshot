@@ -66,10 +66,12 @@ static const struct option long_option[] = {
 
 // Nasty globals
 
+// First two are used in signal handlers, so need to be protected with sig_atomic_t.
+volatile sig_atomic_t daemon_running = 0; // volatile to prevent compiler optimization in while loop
+sig_atomic_t reload_xml = 0;
+
 int verbose = 1;
-int daemon_running = 0;
 int jack_dirty = 0;
-int reload_xml = 0;
 int ic_n = 0; // number of ignored clients.
 char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored clients
 int exit_success = 1; 
