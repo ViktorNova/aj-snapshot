@@ -110,7 +110,6 @@ int main(int argc, char **argv)
     int force = 0;
     enum sys system = NONE; // The system(s) we asked for.
     enum sys system_ready = NONE; // When we asked for a system and got it (bitwise or'd).
-    enum sys system_failed = NONE; // When we asked for a system and didn't get it (bitwise or'd).
     enum act action = STORE;
     static const char *filename;
     snd_seq_t* seq = NULL;
@@ -214,14 +213,19 @@ int main(int argc, char **argv)
             break;
     }
 
-    // Initialize clients with ALSA and JACK.
+    // Initialize clients with ALSA and JACK and remove connections if necessary.
 
     if ((system & ALSA) == ALSA) {
         seq = alsa_initialize(seq);
         if (seq){
+            if (remove_connections){
+                alsa_remove_connections(seq);
+                VERBOSE("aj-snapshot: all ALSA connections removed.\n");
+            } 
             system_ready |= ALSA;
         } 
         else {
+            VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store ALSA connections!\n");
@@ -236,9 +240,14 @@ int main(int argc, char **argv)
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
         if(jackc){
+            if (remove_connections){
+                jack_remove_connections(jackc);
+                VERBOSE("aj-snapshot: all JACK connections removed.\n");
+            }
             system_ready |= JACK;
         } 
         else {
+            VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store JACK connections!\n");
@@ -249,34 +258,6 @@ int main(int argc, char **argv)
             }
             exit_success = 0;
         }
-    }
-
-    // xor: only true if combining a 1 and a 0
-    // Result indicates that we asked for ALSA or JACK, and couldn't initialize.
-    // It should not be possible that a system is initialized when we didn't ask for it.
-    // We need this to distinguish between the cases:
-    // - we didn't ask for a system, and it didn't initialize
-    // - we asked for system, but we couldn't initialize
-
-    system_failed = system ^ system_ready;
-
-    // Remove connections
-
-    if (remove_connections){
-
-        if ((system_ready & ALSA) == ALSA) {
-            alsa_remove_connections(seq);
-            VERBOSE("aj-snapshot: all ALSA connections removed.\n");
-        } 
-        if ((system_failed & ALSA) == ALSA)
-            VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
-
-        if ((system_ready & JACK) == JACK) {
-            jack_remove_connections(jackc);
-            VERBOSE("aj-snapshot: all JACK connections removed.\n");
-        }
-        if ((system_failed & JACK) == JACK) 
-            VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
     }
 
     // STORE/RESTORE CONNECTIONS
