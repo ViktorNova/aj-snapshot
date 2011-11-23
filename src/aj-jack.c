@@ -28,6 +28,14 @@ int jack_success;
 
 /* Callbacks */
 int jack_graph_order (void *arg) {
+    /* Depending on Jack version this callback might not be called to often */
+    pthread_mutex_lock( &graph_order_callback_lock );
+    jack_dirty++;
+    pthread_mutex_unlock( &graph_order_callback_lock );
+}
+
+void jack_port_registration (jack_port_id_t x, int y, void *arg) {
+    /* This callback is called usually always */
     pthread_mutex_lock( &graph_order_callback_lock );
     jack_dirty++;
     pthread_mutex_unlock( &graph_order_callback_lock );
@@ -48,6 +56,7 @@ void jack_shutdown (void * jackc) {
 
 void jack_initialize( jack_client_t** jackc, int callbacks_on )
 {
+    int result;
     jack_options_t options = JackNoStartServer;
     *jackc = jack_client_open("aj-snapshot", options, NULL);
 
@@ -59,16 +68,21 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
     jack_on_shutdown(*jackc, jack_shutdown, jackc);
 
     if (callbacks_on) {
-        jack_set_graph_order_callback(*jackc, jack_graph_order, 0);
-        
+        result = jack_set_graph_order_callback(*jackc, jack_graph_order, jackc);
+        result = jack_set_port_registration_callback(*jackc, jack_port_registration, 0);
+
         if (jack_activate (*jackc)) {
-            fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.");
+            fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.\n");
             jack_client_close(*jackc); 
             *jackc = NULL;
             return;
         }
     }
     
+    pthread_mutex_lock( &graph_order_callback_lock );
+    jack_dirty = 1;
+    pthread_mutex_unlock( &graph_order_callback_lock );
+
     if (verbose && daemon_running) fprintf(stdout, "aj-snapshot: Jack server was started.\n");
 
     return;
