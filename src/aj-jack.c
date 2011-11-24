@@ -29,13 +29,16 @@ int jack_success;
 /* Callbacks */
 int jack_graph_order (void *arg) {
     /* Depending on Jack version this callback might not be called to often */
+    /* It is mainly called when connections are made, but might be called in
+       other situations as well. Or might not being called at all.
+       TODO check differences between JACK1 and JACK2. */
     pthread_mutex_lock( &graph_order_callback_lock );
     jack_dirty++;
     pthread_mutex_unlock( &graph_order_callback_lock );
 }
 
 void jack_port_registration (jack_port_id_t x, int y, void *arg) {
-    /* This callback is called usually always */
+    /* This callback is called when new ports appear. */
     pthread_mutex_lock( &graph_order_callback_lock );
     jack_dirty++;
     pthread_mutex_unlock( &graph_order_callback_lock );
@@ -96,6 +99,7 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
     char src_port[s];
     char tmp_str[jack_port_name_size()];
     char* dest_client_name;
+    int pre_jack_dirty;
 
     snprintf(src_port, s, "%s:%s", client_name, port_name);
 
@@ -114,13 +118,22 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
             if (*jackc == NULL) {
                 err = ENOENT;
             } else {
+                pre_jack_dirty = jack_dirty;
                 err = jack_connect(*jackc, src_port, dest_port);
             }
             pthread_mutex_unlock( &shutdown_callback_lock );
 
             if (err == 0) {
+                /* We managed to do a new connection. Which might have had
+                   trigger graph_reorder_callback. We'll try to ignore this
+                   callback that was caused by us in some naive way... 
+                   As there are bugs in Ubuntu distribution version of jackd
+                   we have to try to guess whether callback was actually
+                   triggered... */
                 pthread_mutex_lock( &graph_order_callback_lock );
-                jack_dirty--;
+                if (jack_dirty > pre_jack_dirty) {
+                  jack_dirty--;
+                }
                 pthread_mutex_unlock( &graph_order_callback_lock );
             }
             if(verbose){
