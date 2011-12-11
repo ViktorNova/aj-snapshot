@@ -225,7 +225,7 @@ int main(int argc, char **argv)
             system_ready |= ALSA;
         } 
         else {
-            VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
+            if (remove_connections) VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store ALSA connections!\n");
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
             system_ready |= JACK;
         } 
         else {
-            VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
+            if (remove_connections) VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store JACK connections!\n");
