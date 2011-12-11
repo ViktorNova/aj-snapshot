@@ -312,6 +312,8 @@ int main(int argc, char **argv)
     else {
         // Run Daemon
         daemon_running = 1;
+        int alsa_clients_n = -1;
+
         while (daemon_running) {
             if (reload_xml > 0) { // Reload XML if triggered with HUP signal
                 reload_xml = 0;
@@ -332,7 +334,9 @@ int main(int argc, char **argv)
                 pthread_mutex_unlock( &registration_callback_lock );
             }
             if ((system_ready & ALSA) == ALSA) {
-                alsa_restore(seq, xml_node);
+                if (alsa_compare_clients(seq, &alsa_clients_n)) {
+                    alsa_restore(seq, xml_node);
+                }
             }
             if ((system & JACK) == JACK) {
                 if (jackc == NULL) { // Make sure jack is up.

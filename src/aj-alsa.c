@@ -246,7 +246,7 @@ void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node )
 	alsa_restore_clients( seq, alsa_node );
 }
 
-snd_seq_t*  alsa_initialize( snd_seq_t* seq )
+snd_seq_t* alsa_initialize( snd_seq_t* seq )
 {
 	int client;
 
@@ -267,4 +267,23 @@ snd_seq_t*  alsa_initialize( snd_seq_t* seq )
 		return NULL;
 	}
     return seq;
+}
+
+int alsa_compare_clients ( snd_seq_t* seq, int *prev_n)
+{
+	int n = 0;
+	snd_seq_client_info_t* cinfo;
+	snd_seq_client_info_alloca(&cinfo);
+	snd_seq_client_info_set_client(cinfo, -1);
+
+	while (snd_seq_query_next_client(seq, cinfo) >= 0) n++;
+    //printf("prev_n: %i\n n: %i\n", *prev_n, n);
+    if (n > *prev_n) {
+        *prev_n = n;
+        return 1;
+    }
+    else {
+        *prev_n = n;
+        return 0;
+    }
 }

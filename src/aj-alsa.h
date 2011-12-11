@@ -24,6 +24,7 @@
 snd_seq_t* alsa_initialize( snd_seq_t* seq );
 void alsa_store( snd_seq_t* seq, mxml_node_t* xml_node );
 void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node );
+int alsa_compare_clients ( snd_seq_t* seq, int *prev_n);
 
 
 #endif
