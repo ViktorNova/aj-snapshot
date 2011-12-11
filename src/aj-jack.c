@@ -22,26 +22,18 @@
 extern int verbose;
 extern int daemon_running;
 extern int jack_dirty;
-extern pthread_mutex_t graph_order_callback_lock;
+extern pthread_mutex_t registration_callback_lock;
 extern pthread_mutex_t shutdown_callback_lock;
 int jack_success;
 
-/* Callbacks */
-int jack_graph_order (void *arg) {
-    /* Depending on Jack version this callback might not be called to often */
-    /* It is mainly called when connections are made, but might be called in
-       other situations as well. Or might not being called at all.
-       TODO check differences between JACK1 and JACK2. */
-    pthread_mutex_lock( &graph_order_callback_lock );
-    jack_dirty++;
-    pthread_mutex_unlock( &graph_order_callback_lock );
-}
 
-void jack_port_registration (jack_port_id_t x, int y, void *arg) {
+void jack_client_registration (const char *name, int reg, void *arg) {
     /* This callback is called when new ports appear. */
-    pthread_mutex_lock( &graph_order_callback_lock );
-    jack_dirty++;
-    pthread_mutex_unlock( &graph_order_callback_lock );
+    if(reg){
+        pthread_mutex_lock( &registration_callback_lock );
+        jack_dirty++;
+        pthread_mutex_unlock( &registration_callback_lock );
+    }
 }
 
 void jack_shutdown (void * jackc) {
@@ -71,8 +63,7 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
     jack_on_shutdown(*jackc, jack_shutdown, jackc);
 
     if (callbacks_on) {
-        result = jack_set_graph_order_callback(*jackc, jack_graph_order, jackc);
-        result = jack_set_port_registration_callback(*jackc, jack_port_registration, 0);
+        result = jack_set_client_registration_callback(*jackc, jack_client_registration, 0);
 
         if (jack_activate (*jackc)) {
             fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.\n");
@@ -82,9 +73,9 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
         }
     }
     
-    pthread_mutex_lock( &graph_order_callback_lock );
+    pthread_mutex_lock( &registration_callback_lock );
     jack_dirty = 1;
-    pthread_mutex_unlock( &graph_order_callback_lock );
+    pthread_mutex_unlock( &registration_callback_lock );
 
     if (verbose && daemon_running) fprintf(stdout, "aj-snapshot: Jack server was started.\n");
 
@@ -118,29 +109,15 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
             if (*jackc == NULL) {
                 err = ENOENT;
             } else {
-                pre_jack_dirty = jack_dirty;
                 err = jack_connect(*jackc, src_port, dest_port);
             }
             pthread_mutex_unlock( &shutdown_callback_lock );
 
-            if (err == 0) {
-                /* We managed to do a new connection. Which might have had
-                   trigger graph_reorder_callback. We'll try to ignore this
-                   callback that was caused by us in some naive way... 
-                   As there are bugs in Ubuntu distribution version of jackd
-                   we have to try to guess whether callback was actually
-                   triggered... */
-                pthread_mutex_lock( &graph_order_callback_lock );
-                if (jack_dirty > pre_jack_dirty) {
-                  jack_dirty--;
-                }
-                pthread_mutex_unlock( &graph_order_callback_lock );
-            }
             if(verbose){
                 if (err == 0) {
                     fprintf(stdout, "Connecting port '%s' with '%s'\n", src_port, dest_port);
                 } 
-                else if (!daemon_running) {
+                else if (!daemon_running || 1) {
                     if (err == EEXIST) {
                         fprintf(stdout, "Port '%s' is already connected to '%s'\n", src_port, dest_port);
                     } 

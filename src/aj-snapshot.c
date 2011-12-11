@@ -77,7 +77,7 @@ char *ignored_clients[IGNORED_CLIENTS_MAX]; // array to store names of ignored c
 int alsa_success = 1; 
 int jack_success = 1; 
 
-pthread_mutex_t graph_order_callback_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t registration_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
 //////////////////////
@@ -327,22 +327,26 @@ int main(int argc, char **argv)
                         jack_remove_connections(jackc);
                     }
                 }
+                pthread_mutex_lock( &registration_callback_lock );
+                jack_dirty++;
+                pthread_mutex_unlock( &registration_callback_lock );
             }
             if ((system_ready & ALSA) == ALSA) {
                 alsa_restore(seq, xml_node);
             }
             if ((system & JACK) == JACK) {
                 if (jackc == NULL) { // Make sure jack is up.
-                    jack_initialize(&jackc, (action==DAEMON)); //TODO: remove connections after initialize.
+                    jack_initialize(&jackc, (action==DAEMON));
                 } 
-                pthread_mutex_lock( &graph_order_callback_lock );
+                pthread_mutex_lock( &registration_callback_lock );
 
-                if (jack_dirty > 0) { // Only restore when connections have changed
+                if (jack_dirty > 0) { // Only restore when clients register
                     jack_dirty = 0;
-                    pthread_mutex_unlock( &graph_order_callback_lock );
+                    pthread_mutex_unlock( &registration_callback_lock );
+                    sleep(1);
                     jack_restore(&jackc, xml_node);
                 }
-                else pthread_mutex_unlock( &graph_order_callback_lock );
+                else pthread_mutex_unlock( &registration_callback_lock );
             }
             usleep(POLLING_INTERVAL_MS * 1000);
         }
