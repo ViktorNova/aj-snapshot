@@ -125,6 +125,8 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
 
 		alsa_store_ports( seq, cinfo, pinfo, client_node );
 	}
+    snd_seq_client_info_free(cinfo);
+    snd_seq_port_info_free(pinfo);
 }
 
 void alsa_store( snd_seq_t* seq, mxml_node_t* xml_node )
