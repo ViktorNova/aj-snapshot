@@ -167,25 +167,25 @@ void alsa_restore_connections( snd_seq_t* seq, const char* client_name, int port
 					}
 					else if(verbose && !daemon_running){
 						if (snd_seq_get_port_subscription(seq, subs) == 0) {
-							fprintf(stdout, "Port '%s' is already connected to '%s'\n", 
-								client_name, dest_client_name);
+							fprintf(stdout, "Port '%s':%i is already connected to '%s':%i\n", 
+								client_name, port_id, dest_client_name, dest_port_id);
 						}
 						else  { 
-                            fprintf(stdout, "Failed to connect port '%s' to '%s' !\n", 
-							        client_name, dest_client_name);
+                            fprintf(stdout, "Failed to connect port '%s':%i to '%s':%i !\n", 
+							    client_name, port_id, dest_client_name, dest_port_id);
                             alsa_success = 0;
                         }
 					}
 				}
 				else if(verbose && !daemon_running) {
-                    fprintf(stdout, "Client %s is not active, so failed to subscribe from %s\n", 
-					        dest_client_name, client_name);
+                    fprintf(stdout, "Client '%s' is not active, so failed to subscribe from '%s':%i\n", 
+					        dest_client_name, client_name, port_id);
                     alsa_success = 0;
                 }
 			}
 			else if(verbose  && !daemon_running) { 
-                fprintf(stdout, "Client %s is not active, so failed to subscribe to %s\n", 
-    					client_name, dest_client_name);
+                fprintf(stdout, "Client '%s' is not active, so failed to subscribe to '%s':%i\n", 
+    					client_name, dest_client_name, dest_port_id);
                 alsa_success = 0;
             }
 		}
