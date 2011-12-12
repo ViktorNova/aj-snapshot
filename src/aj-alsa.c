@@ -21,7 +21,7 @@
 
 extern int verbose;
 extern int daemon_running;
-int alsa_success;
+extern int alsa_success;
 
 void alsa_store_connections( snd_seq_t* seq, const snd_seq_addr_t *addr, mxml_node_t* port_node )
 {

@@ -24,7 +24,7 @@ extern int daemon_running;
 extern int jack_dirty;
 extern pthread_mutex_t registration_callback_lock;
 extern pthread_mutex_t shutdown_callback_lock;
-int jack_success;
+extern int jack_success;
 
 
 void jack_client_registration (const char *name, int reg, void *arg) {
