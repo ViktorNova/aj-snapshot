@@ -5,7 +5,71 @@
 .SH NAME
 aj-snapshot
 .SH SYNOPSIS
-.B aj-snapshot \fR[ \fB-adfjqrvx\fR ] [ \fB-i \fIclient_name\fR ] [ \fIFILE\fR ]
+.B aj-snapshot \fR[ \fB-adfjqrx\fR ] [ \fB-i \fIclient_name\fR ]... [ \fIFILE\fR ]
 .SH DESCRIPTION
+Aj-snapshot is a small program that can be used to make snapshots of the connections made between JACK and/or ALSA clients. Because JACK can provide both audio and MIDI support to programs, aj-snapshot can store both types of connections for JACK. ALSA, on the other hand, only provides routing facilities for MIDI clients. If you call aj-snapshot without any options, aj-snapshot will store all current ALSA \fBand\fR JACK connections to \fIFILE\fR. The file will be an XML file, and you can use a text-editor if you want to edit it manually.
+.SH OPTIONS
 .PP
-Aj-snapshot is a small program that can be used to make snapshots of the connections made between JACK and/or ALSA clients. Because JACK can provide both audio and MIDI support to programs, aj-snapshot can store both types of connections for JACK. ALSA, on the other hand, only provides routing facilities for MIDI clients.
+\fB-a \fRor \fB--alsa\fR
+.IP ""
+Only store or restore ALSA midi connections. Also works in daemon mode.
+.PP
+\fB-d \fRor \fB--daemon\fR
+.IP ""
+Run aj-snapshot in daemon mode. Aj-snapshot will first try to restore the connections from your snapshot file. After this, it will wait for new clients to be registered with ALSA or JACK. Whenever a new client is registered, it will try to restore the connections from your snapshot file. (NOTE: this is the behaviour since version 0.9.6.). If you start aj-snapshot in daemon mode, you don't need to specify the \fB-r\fR,\fB--restore\fR flag as it is implied anyway. 
+.RS
+.PP
+.B TIP: 
+When you have changed the connections between programs while an aj-snapshot daemon is running, it is possible to save the new state to the file used by the daemon (with a second instance of aj-snapshot), and force the the daemon to reload the file by sending it the -HUP (hangup) signal:
+.RS
+.PP
+.B aj-snapshot -d my_snapshot.xml&  \fR run aj-snapshot in daemon mode
+.br
+.B aj-snapshot -f my_snapshot.xml  \fR  force aj-snapshot to save a new snapshot over the original file
+.br
+.B kill -HUP $(pidof aj-snapshot)  \fR  ask aj-snapshot to reload the snapshot file
+.RE
+.RE
+.PP
+\fB-f \fRor \fB--force\fR
+.IP ""
+When you try to save a snapshot over an existing file, aj-snapshot will ask you if you want to overwrite that file. With this option, you can force aj-snapshot to overwrite that file.
+.PP
+\fB-j \fRor \fB--jack\fR
+.IP ""
+Only store or restore JACK audio and midi connections. Also works in daemon mode.
+.PP
+\fB-q \fRor \fB--quiet\fR
+.IP ""
+Don't print any information about the connections that are stored or restored.
+.PP
+\fB-r \fRor \fB--restore\fR
+.IP ""
+When you specify the \fB-r\fR flag, aj-snapshot will try to restore all ALSA and JACK connections from \fIFILE\fR. (without it, aj-snapshot will try to \fBstore\fR connections to \fIFILE\fR). You can combine this option with the \fB-a\fR or \fB-j\fR options, if you want to restore ALSA or JACK connections only.
+.PP
+\fB-x \fRor \fB--remove\fR
+.IP ""
+The \fB-x\fR option can be used when restoring connections, or when running in daemon mode. With this option, aj-snapshot will remove all existing connections before restoring the snapshot file. When you combine it with the \fB-a\fR or \fB-j\fR option, only the connections for the specific subsystem (ALSA or JACK) will be removed. Without this option, aj-snapshot will try to restore connections on top of the connections that are already active. 
+.IP ""
+There is one more way in which you can use the \fB-x\fR option. If you call aj-snapshot without the \fIFILE\fR argument, you can use the \fB-x\fR option to remove all existing ALSA and JACK connections (without doing anything else). As before you can combine it with the \fB-a\fR or \fB-j\fR options.
+.PP
+\fB-i \fR client_name
+.br or \fB--ignore\fR client_name
+.IP ""
+You can use this option to name a client that should be ignored by aj-snapshot. You should write the exact name of the client after the -i option. If that name contains spaces, or other characters that have special meaning to the shell, you should put the name between single (safest) or double quotes. To know the exact name of a client, you could save a snapshot and look up the name in the snapshot file. If you want to ignore multiple clients, you have to repeat the \fB-i\fR option with different client names (upto 50 clients).
+.PP
+\fB-h \fRor \fB--help\fB
+.IP ""
+Print a short help message
+.SH AUTHOR
+Written by Lieven Moors and Jari Suominen
+.SH REPORTING BUGS
+To report aj-snapshot bugs, or if you have feature requests:
+.br
+.UR http://sourceforge.net/projects/aj-snapshot/
+.UE
+.PP
+Aj-snapshot home page:
+.br
+.UR http://aj-snapshot.sourceforge.net/
+.UE
