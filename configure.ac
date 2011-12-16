@@ -23,5 +23,5 @@ PKG_CHECK_MODULES([JACK], [jack])
 PKG_CHECK_MODULES([MXML], [mxml])
 
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT(Makefile src/Makefile man/Makefile)
 
