@@ -19,19 +19,6 @@ Only store or restore ALSA midi connections. Also works in daemon mode.
 Run aj-snapshot in daemon mode. Aj-snapshot will first try to restore the connections from your snapshot file. After this, it will wait for new clients to be registered with ALSA or JACK. Whenever a new client is registered, it will try to restore the connections from your snapshot file. (NOTE: this is the behaviour since version 0.9.6.). If you start aj-snapshot in daemon mode, you don't need to specify the \fB-r\fR,\fB--restore\fR flag as it is implied anyway. 
 .IP ""
 When the JACK server is stopped (or crashes) while aj-snapshot runs in daemon mode, aj-snapshot will try to keep running. When the JACK server is started again later, aj-snapshot will reattach automatically and restore your connections when needed.
-.RS
-.PP
-.B TIP: 
-When you have changed the connections between programs while an aj-snapshot daemon is running, it is possible to save the new state to the file used by the daemon (with a second instance of aj-snapshot), and force the daemon to reload the file by sending it the -HUP (hangup) signal:
-.RS
-.PP
-.B aj-snapshot -d my_snapshot.xml&  \fR run aj-snapshot in daemon mode
-.br
-.B aj-snapshot -f my_snapshot.xml  \fR  force aj-snapshot to save a new snapshot over the original file
-.br
-.B kill -HUP $(pidof aj-snapshot)  \fR  ask aj-snapshot to reload the snapshot file
-.RE
-.RE
 .PP
 \fB-f \fRor \fB--force\fR
 .IP ""
