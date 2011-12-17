@@ -210,8 +210,8 @@ void jack_store_connections( jack_client_t* jackc, const char* port_name, mxml_n
 void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
 {
     mxml_node_t* jack_node = mxmlNewElement(xml_node, "jack");
-    mxml_node_t* client_node;
-    mxml_node_t* port_node;
+    mxml_node_t* client_node = NULL;
+    mxml_node_t* port_node = NULL;
 
     char tmp_str[jack_port_name_size()];
     char client_name_prev[jack_port_name_size()];

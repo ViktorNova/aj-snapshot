@@ -62,7 +62,7 @@ int write_xml( const char* filename, mxml_node_t* xml_node, int force )
 {
 	FILE* file;
 
-	if( file = fopen(filename, "r") ){
+	if( (file = fopen(filename, "r")) ){
 		if(!force){
 			fprintf(stdout, "This file already exists, do you want to overwrite it? y/n\n> ");
 			char answer = getc(stdin);
