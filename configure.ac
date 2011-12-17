@@ -13,7 +13,6 @@ AC_CHECK_HEADER(getopt.h, [])
 AC_CHECK_HEADER(alsa/asoundlib.h, [])
 AC_CHECK_HEADER(jack/jack.h, [])
 AC_CHECK_HEADER(mxml.h, [])
-AC_CHECK_HEADERS([string.h])
 
 AC_CHECK_LIB(asound, main, [], [AC_MSG_ERROR(ALSA library (asound) is required)])
 AC_CHECK_LIB(jack, main, [], [AC_MSG_ERROR(JACK library (jack) is required)])
