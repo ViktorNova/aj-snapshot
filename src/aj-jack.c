@@ -90,7 +90,6 @@ void jack_restore_connections( jack_client_t** jackc, const char* client_name, c
     char src_port[s];
     char tmp_str[jack_port_name_size()];
     char* dest_client_name;
-    int pre_jack_dirty;
 
     snprintf(src_port, s, "%s:%s", client_name, port_name);
 
