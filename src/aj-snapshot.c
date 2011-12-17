@@ -211,6 +211,8 @@ int main(int argc, char **argv)
         case DAEMON:
             xml_node = read_xml(filename, xml_node);
             break;
+        default:
+            break;
     }
 
     // Initialize clients with ALSA and JACK and remove connections if necessary.
@@ -233,6 +235,8 @@ int main(int argc, char **argv)
                 case RESTORE:
                     VERBOSE("aj-snapshot: will NOT restore ALSA connections!\n");
                     break;
+                default:
+                    break;
             }
             exit_success = 0;
         }
@@ -254,6 +258,8 @@ int main(int argc, char **argv)
                     break;
                 case RESTORE:
                     VERBOSE("aj-snapshot: will NOT restore JACK connections!\n");
+                    break;
+                default:
                     break;
             }
             exit_success = 0;
@@ -281,6 +287,8 @@ int main(int argc, char **argv)
                         }
                     }
                     break;
+                default:
+                    break;
             }
         }
 
@@ -300,6 +308,8 @@ int main(int argc, char **argv)
                             exit_success = 0;
                         }
                     }
+                    break;
+                default:
                     break;
             }
         }
