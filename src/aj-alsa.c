@@ -319,26 +319,19 @@ int alsa_compare_clients ( snd_seq_t* seq, char ***alsa_client_list, unsigned in
     else {
         if(acl_size_new > *acl_size){ // There are more clients than before...
             return_value = 1;
-            printf("more clients\n");
-            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
         }
         else if(acl_size_new == *acl_size){ // Equal number of clients, compare one to one.
-            printf("equal clients\n");
-            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
             i = 0;
             while( (i < acl_size_new) &&
                    (strcmp(alsa_client_list_new[i], (*alsa_client_list)[i]) == 0)) i++;
             if(i != acl_size_new) return_value = 1;
         }
         else { // Less clients than before, see if new client are present in the list
-            printf("less clients\n");
-            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
             i = 0;
             unsigned int j = 0;
             while(i < acl_size_new){
                 while((i < acl_size_new) && 
                         (strcmp(alsa_client_list_new[i], (*alsa_client_list)[j]) == 0)){ // Try one-to-one
-                    printf("comparing '%s' with '%s'\n", alsa_client_list_new[i], (*alsa_client_list)[j]);
                     i++; j++;
                 }
                 if((i < (acl_size_new -1)) && (j < (*acl_size -1))) j++; // Try comparing with the next of the old list
