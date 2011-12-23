@@ -348,13 +348,5 @@ int alsa_compare_clients ( snd_seq_t* seq, char ***alsa_client_list, unsigned in
         *alsa_client_list = alsa_client_list_new; // store new list
         *acl_size = acl_size_new;
     }
-/*
-    i = 0;
-    while ((i < acl_size_new) && (alsa_client_list_new[i] != NULL) ){
-        fprintf(stdout, "%s\n", alsa_client_list_new[i]);
-        i++;
-    }
-*/
-    printf("return_value: %i\n", return_value);
     return return_value;
 }
