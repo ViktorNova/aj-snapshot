@@ -322,7 +322,8 @@ int main(int argc, char **argv)
     else {
         // Run Daemon
         daemon_running = 1;
-        int alsa_clients_n = -1;
+        char **alsa_client_list = NULL;
+        unsigned int acl_size = 0; // size of alsa_client_list
 
         while (daemon_running) {
             if (reload_xml > 0) { // Reload XML if triggered with HUP signal
@@ -344,7 +345,7 @@ int main(int argc, char **argv)
                 pthread_mutex_unlock( &registration_callback_lock );
             }
             if ((system_ready & ALSA) == ALSA) {
-                if (alsa_compare_clients(seq, &alsa_clients_n)) {
+                if (alsa_compare_clients(seq, &alsa_client_list, &acl_size)) {
                     alsa_restore(seq, xml_node);
                 }
             }

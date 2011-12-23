@@ -269,21 +269,99 @@ snd_seq_t* alsa_initialize( snd_seq_t* seq )
     return seq;
 }
 
-int alsa_compare_clients ( snd_seq_t* seq, int *prev_n)
+
+int cmp(const void *name1, const void *name2)
 {
-	int n = 0;
+    const char *name1_ = *(const char **)name1;
+    const char *name2_ = *(const char **)name2;
+    return strcmp(name1_, name2_);
+}
+
+
+int alsa_compare_clients ( snd_seq_t* seq, char ***alsa_client_list, unsigned int *acl_size )
+{
+    unsigned int i = 0;
+	const char *name;
+    char **alsa_client_list_new;
+    unsigned int acl_size_new = 0;
+    int return_value = 0;
+
 	snd_seq_client_info_t* cinfo;
 	snd_seq_client_info_alloca(&cinfo);
 	snd_seq_client_info_set_client(cinfo, -1);
 
-	while (snd_seq_query_next_client(seq, cinfo) >= 0) n++;
-    //printf("prev_n: %i\n n: %i\n", *prev_n, n);
-    if (n > *prev_n) {
-        *prev_n = n;
-        return 1;
+    
+	while (snd_seq_query_next_client(seq, cinfo) >= 0) acl_size_new++; // count clients
+
+    if ((alsa_client_list_new = (char**)malloc((sizeof(char *) * acl_size_new))) == NULL){
+        perror("malloc"); // allocate pointers for strings
+    }
+
+	snd_seq_client_info_set_client(cinfo, -1);
+
+	while ((snd_seq_query_next_client(seq, cinfo) >= 0)  ){ 
+//            && (i < acl_size_new) // It's possible new clients were added since we counted.
+//            && (alsa_client_list_new[i] != NULL)){ // It is possible a client disappeared since we counted.
+		name = snd_seq_client_info_get_name(cinfo);
+        if ((alsa_client_list_new[i] = malloc(strlen(name) + 1)) == NULL) {
+            perror("malloc"); // allocate space for the strings, and store pointers
+        }
+        else strcpy(alsa_client_list_new[i], name); // copy names
+        i++;
+    }
+    qsort(alsa_client_list_new, acl_size_new, sizeof(char *), cmp); // sort names
+
+    if (*alsa_client_list == NULL){
+        *alsa_client_list = alsa_client_list_new;
+        *acl_size = acl_size_new;
+        return_value = 1; // it's the first time we check clients
     }
     else {
-        *prev_n = n;
-        return 0;
+        if(acl_size_new > *acl_size){ // There are more clients than before...
+            return_value = 1;
+            printf("more clients\n");
+            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
+        }
+        else if(acl_size_new == *acl_size){ // Equal number of clients, compare one to one.
+            printf("equal clients\n");
+            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
+            i = 0;
+            while( (i < acl_size_new) &&
+                   (strcmp(alsa_client_list_new[i], (*alsa_client_list)[i]) == 0)) i++;
+            if(i != acl_size_new) return_value = 1;
+        }
+        else { // Less clients than before, see if new client are present in the list
+            printf("less clients\n");
+            printf("acl_size: %i, acl_size_new: %i", *acl_size, acl_size_new);
+            i = 0;
+            unsigned int j = 0;
+            while(i < acl_size_new){
+                while((i < acl_size_new) && 
+                        (strcmp(alsa_client_list_new[i], (*alsa_client_list)[j]) == 0)){ // Try one-to-one
+                    printf("comparing '%s' with '%s'\n", alsa_client_list_new[i], (*alsa_client_list)[j]);
+                    i++; j++;
+                }
+                if((i < (acl_size_new -1)) && (j < (*acl_size -1))) j++; // Try comparing with the next of the old list
+                else break;
+            }
+            if(i != acl_size_new) return_value = 1;
+        }
+        i = 0; // free memory of old list
+        while (i < *acl_size) {
+            free((*alsa_client_list)[i]);    
+            i++;
+        }        
+        free(*alsa_client_list);
+        *alsa_client_list = alsa_client_list_new; // store new list
+        *acl_size = acl_size_new;
     }
+/*
+    i = 0;
+    while ((i < acl_size_new) && (alsa_client_list_new[i] != NULL) ){
+        fprintf(stdout, "%s\n", alsa_client_list_new[i]);
+        i++;
+    }
+*/
+    printf("return_value: %i\n", return_value);
+    return return_value;
 }
