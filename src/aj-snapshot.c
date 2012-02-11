@@ -116,7 +116,10 @@ int main(int argc, char **argv)
     jack_client_t* jackc = NULL;
     mxml_node_t* xml_node = NULL;
     int exit_success = 1;
-	
+
+    struct pollfd *pfds; // To check for new clients or ports in ALSA.
+    int npfds;
+    int err, count;
 
     while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
 
@@ -183,7 +186,7 @@ int main(int argc, char **argv)
         else {
             fprintf(stderr, "aj-snapshot: Will not remove connections before storing connections\n");
         }
-	}
+    }
 
     if (action == DAEMON) {
         struct sigaction sig_int_handler;
@@ -224,6 +227,9 @@ int main(int argc, char **argv)
                 alsa_remove_connections(seq);
                 VERBOSE("aj-snapshot: all ALSA connections removed.\n");
             } 
+            snd_seq_nonblock(seq, 1);
+            npfds = snd_seq_poll_descriptors_count(seq, POLLIN); // initialize poll file descriptors
+            pfds = alloca(sizeof(*pfds) * npfds);
             system_ready |= ALSA;
         } 
         else {
@@ -322,8 +328,6 @@ int main(int argc, char **argv)
     else {
         // Run Daemon
         daemon_running = 1;
-        char **alsa_client_list = NULL;
-        unsigned int acl_size = 0; // size of alsa_client_list
 
         while (daemon_running) {
             if (reload_xml > 0) { // Reload XML if triggered with HUP signal
@@ -345,9 +349,20 @@ int main(int argc, char **argv)
                 pthread_mutex_unlock( &registration_callback_lock );
             }
             if ((system_ready & ALSA) == ALSA) {
-                if (alsa_compare_clients(seq, &alsa_client_list, &acl_size)) {
-                    alsa_restore(seq, xml_node);
+                snd_seq_poll_descriptors(seq, pfds, npfds, POLLIN);
+                if (poll(pfds, npfds, -1) > 0){
+                    snd_seq_event_t *event;
+                    while(snd_seq_event_input(seq, &event) > 0){
+                        if (event && (event->type == SND_SEQ_EVENT_PORT_START))
+                            count++;
+                        event = NULL;
+                    }
                 }
+                else {
+                    perror("poll call failed");
+                }
+                if(count > 0)
+                    alsa_restore(seq, xml_node);
             }
             if ((system & JACK) == JACK) {
                 if (jackc == NULL) { // Make sure jack is up.
