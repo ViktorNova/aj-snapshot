@@ -5,7 +5,7 @@
 .SH NAME
 aj-snapshot
 .SH SYNOPSIS
-.B aj-snapshot \fR[ \fB-adfjqrx\fR ] [ \fB-i \fIclient_name\fR ]... [ \fIFILE\fR ]
+.B aj-snapshot \fR[ \fB-adfjqrx\fR ] [ \fB-p \fIpolling_interval\fR ] [ \fB-i \fIclient_name\fR ]... [ \fIFILE\fR ]
 .SH DESCRIPTION
 Aj-snapshot is a small program that can be used to make snapshots of the connections made between JACK and/or ALSA clients. Because JACK can provide both audio and MIDI support to programs, aj-snapshot can store both types of connections for JACK. ALSA, on the other hand, only provides routing facilities for MIDI clients. If you call aj-snapshot without any options, aj-snapshot will store all current ALSA \fBand\fR JACK connections to \fIFILE\fR. The file will be an XML file, and you can use a text-editor if you want to edit it manually.
 .SH OPTIONS
