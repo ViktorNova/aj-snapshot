@@ -27,7 +27,7 @@ extern pthread_mutex_t shutdown_callback_lock;
 extern int jack_success;
 
 
-void jack_client_registration (const char *name, int reg, void *arg) {
+void jack_port_registration (jack_port_id_t port, int reg, void *arg) {
     /* This callback is called when new ports appear. */
     if(reg){
         pthread_mutex_lock( &registration_callback_lock );
@@ -63,8 +63,8 @@ void jack_initialize( jack_client_t** jackc, int callbacks_on )
     jack_on_shutdown(*jackc, jack_shutdown, jackc);
 
     if (callbacks_on) {
-        result = jack_set_client_registration_callback(*jackc, jack_client_registration, 0);
-
+        result = jack_set_port_registration_callback(*jackc, jack_port_registration, 0);
+        if(result < 0) fprintf(stderr, "aj-snapshot: Failed to set the port registration callback.\n");
         if (jack_activate (*jackc)) {
             fprintf (stderr, "aj-snapshot: Jack server seems to be running but is not responding.\n");
             jack_client_close(*jackc); 

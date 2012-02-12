@@ -117,9 +117,9 @@ int main(int argc, char **argv)
     mxml_node_t* xml_node = NULL;
     int exit_success = 1;
 
-    struct pollfd *pfds; // To check for new clients or ports in ALSA.
-    int npfds;
-    int err, count;
+    struct pollfd *pfds = NULL; // To check for new clients or ports in ALSA.
+    int npfds = 0;
+    int alsa_dirty = 1;
 
     while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
 
@@ -227,9 +227,6 @@ int main(int argc, char **argv)
                 alsa_remove_connections(seq);
                 VERBOSE("aj-snapshot: all ALSA connections removed.\n");
             } 
-            snd_seq_nonblock(seq, 1);
-            npfds = snd_seq_poll_descriptors_count(seq, POLLIN); // initialize poll file descriptors
-            pfds = alloca(sizeof(*pfds) * npfds);
             system_ready |= ALSA;
         } 
         else {
@@ -328,12 +325,39 @@ int main(int argc, char **argv)
     else {
         // Run Daemon
         daemon_running = 1;
+        // initialize poll file descriptors if we use ALSA
+        // and connect a port to the system announce port.
+        if ((system_ready & ALSA) == ALSA) {
+            int err;
+            err = snd_seq_create_simple_port(seq, "aj-snapshot",
+                SND_SEQ_PORT_CAP_WRITE, 
+                SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
+            if(err < 0) 
+                fprintf(stderr, "Cannot create port: %s", snd_strerror(err));
+            err = snd_seq_connect_from(seq, 0, SND_SEQ_CLIENT_SYSTEM, SND_SEQ_PORT_SYSTEM_ANNOUNCE);
+            if(err < 0)
+                fprintf(stderr, "Cannot connect to ALSA system announce port: %s", snd_strerror(err));
+            snd_seq_nonblock(seq, 1);
+            npfds = snd_seq_poll_descriptors_count(seq, POLLIN);
+            pfds = alloca(sizeof(*pfds) * npfds);
+        }
 
         while (daemon_running) {
-            if (reload_xml > 0) { // Reload XML if triggered with HUP signal
+            // Check if JACK got active while running in the daemon loop,
+            // and connect to it if necessary.
+            if ((system & JACK) == JACK) {
+                if (jackc == NULL) { // Make sure jack is up.
+                    jack_initialize(&jackc, (action==DAEMON));
+                    if (jackc) system_ready |= JACK;
+                } 
+            }
+            // Reload XML if triggered with HUP signal,
+            // and remove connections if necessary.
+            if (reload_xml > 0) {
                 reload_xml = 0;
                 if(verbose) fprintf(stdout, "aj-snapshot: reloading XML file: %s\n", filename);
                 xml_node = read_xml(filename, xml_node);
+
                 if ((system_ready & ALSA) == ALSA) {
                     if(remove_connections){ 
                         alsa_remove_connections(seq);
@@ -344,40 +368,59 @@ int main(int argc, char **argv)
                         jack_remove_connections(jackc);
                     }
                 }
+                // Mark both ALSA and JACK as dirty
+                alsa_dirty++;
                 pthread_mutex_lock( &registration_callback_lock );
                 jack_dirty++;
                 pthread_mutex_unlock( &registration_callback_lock );
             }
+            // Poll ALSA for new ports and mark ALSA dirty if necessary.
             if ((system_ready & ALSA) == ALSA) {
                 snd_seq_poll_descriptors(seq, pfds, npfds, POLLIN);
-                if (poll(pfds, npfds, -1) > 0){
+                if (poll(pfds, npfds, 0) >= 0){
                     snd_seq_event_t *event;
                     while(snd_seq_event_input(seq, &event) > 0){
                         if (event && (event->type == SND_SEQ_EVENT_PORT_START))
-                            count++;
+                            alsa_dirty++;
                         event = NULL;
                     }
                 }
-                else {
-                    perror("poll call failed");
-                }
-                if(count > 0)
-                    alsa_restore(seq, xml_node);
+                else perror("poll call failed");
             }
-            if ((system & JACK) == JACK) {
-                if (jackc == NULL) { // Make sure jack is up.
-                    jack_initialize(&jackc, (action==DAEMON));
-                } 
-                pthread_mutex_lock( &registration_callback_lock );
 
-                if (jack_dirty > 0) { // Only restore when clients register
-                    jack_dirty = 0;
-                    pthread_mutex_unlock( &registration_callback_lock );
-                    sleep(1);
-                    jack_restore(&jackc, xml_node);
-                }
-                else pthread_mutex_unlock( &registration_callback_lock );
+            switch (system_ready){
+                case JACK:
+                    pthread_mutex_lock( &registration_callback_lock );
+                    if (jack_dirty > 0){
+                        jack_dirty = 0;
+                        pthread_mutex_unlock( &registration_callback_lock );
+                        jack_restore(&jackc, xml_node);
+                    }
+                    else pthread_mutex_unlock( &registration_callback_lock );
+                    break;
+                case ALSA:
+                    if(alsa_dirty > 0){
+                        alsa_dirty = 0;
+                        alsa_restore(seq, xml_node);
+                    }
+                    break;
+                case ALSA_JACK:
+                    // If running with ALSA and JACK, restore ports of both
+                    // if one of them is marked dirty.
+                    pthread_mutex_lock( &registration_callback_lock );
+                    if ((alsa_dirty > 0) || (jack_dirty > 0)){
+                        jack_dirty = 0;
+                        pthread_mutex_unlock( &registration_callback_lock );
+                        alsa_dirty = 0;
+
+                        alsa_restore(seq, xml_node);
+                        jack_restore(&jackc, xml_node);
+                    }
+                    else pthread_mutex_unlock( &registration_callback_lock );
+               default:
+                   break;
             }
+
             usleep(POLLING_INTERVAL_MS * 1000);
         }
     }
