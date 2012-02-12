@@ -62,6 +62,7 @@ static const struct option long_option[] = {
     {"force", 0, NULL, 'f'},
     {"ignore", 1, NULL, 'i'},
     {"quiet", 0, NULL, 'q'},
+    {"poll", 1, NULL, 'p'},
 };
 
 // Nasty globals
@@ -116,12 +117,13 @@ int main(int argc, char **argv)
     jack_client_t* jackc = NULL;
     mxml_node_t* xml_node = NULL;
     int exit_success = 1;
+    unsigned int polling_interval_ms = 1000;
 
     struct pollfd *pfds = NULL; // To check for new clients or ports in ALSA.
     int npfds = 0;
     int alsa_dirty = 1;
 
-    while ((c = getopt_long(argc, argv, "ajrdxfi:qh", long_option, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "ajrdxfi:p:qh", long_option, NULL)) != -1) {
 
         switch (c){
 
@@ -150,6 +152,9 @@ int main(int argc, char **argv)
                 fprintf(stderr, "aj-snapshot: ERROR: you have more then %i ignored clients\n", IGNORED_CLIENTS_MAX);
                 exit(EXIT_FAILURE);
             }
+            break;
+        case 'p':
+            polling_interval_ms = atoi(optarg);
             break;
         case 'q':
             verbose = 0;
@@ -421,7 +426,7 @@ int main(int argc, char **argv)
                    break;
             }
 
-            usleep(POLLING_INTERVAL_MS * 1000);
+            usleep(polling_interval_ms * 1000);
         }
     }
 

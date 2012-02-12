@@ -36,7 +36,6 @@
 #include "aj-remove.h"
 
 #define IGNORED_CLIENTS_MAX 50
-#define POLLING_INTERVAL_MS 1000
 
 #define VERBOSE(str) if(verbose) fprintf(stdout, str)
 
