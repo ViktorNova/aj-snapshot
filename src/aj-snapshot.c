@@ -29,7 +29,7 @@ static void usage(void)
     fprintf(stdout, " Without options -a or -j, all actions apply to both ALSA and JACK connections        \n");
     fprintf(stdout, " Without option -r, and with 'file', aj-snapshot will store connections to file.      \n");
     fprintf(stdout, "                                                                                      \n");
-    fprintf(stdout, " Usage: aj-snapshot [-options] [-i client_name] [file]                                \n");
+    fprintf(stdout, " Usage: aj-snapshot [-options] [-p milliseconds] [-i client_name] [file]              \n");
     fprintf(stdout, "                                                                                      \n");
     fprintf(stdout, "  -a,--alsa     Only store/restore ALSA midi connections.                             \n");
     fprintf(stdout, "  -j,--jack     Only store/restore JACK audio and midi connections.                   \n");
@@ -38,6 +38,7 @@ static void usage(void)
     fprintf(stdout, "  -f,--force    Don't ask before overwriting an existing file.                        \n");
     fprintf(stdout, "  -i,--ignore   Specify a name of a client you want to ignore.                        \n");
     fprintf(stdout, "                Note: You can ignore multiple clients by repeating this option.       \n");
+    fprintf(stdout, "  -p,--poll     Specify a value in ms that should be used as polling interval         \n");
     fprintf(stdout, "  -q,--quiet    Be quiet about what happens when storing/restoring connections.       \n");
     fprintf(stdout, "  -x,--remove   With 'file': remove all ALSA and/or JACK connections before restoring.\n");
     fprintf(stdout, "  -x,--remove   Without 'file': only remove ALSA and/or JACK connections.             \n");
