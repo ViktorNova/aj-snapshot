@@ -1,1 +1,1 @@
-man_MANS = aj-snapshot.1
+dist_man_MANS = aj-snapshot.1
