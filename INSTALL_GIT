@@ -3,9 +3,9 @@ the git repository, you first have to clone the repository with:
 
 git clone git://aj-snapshot.git.sourceforge.net/gitroot/aj-snapshot/aj-snapshot
 
-To compile it first cd into the new directory and follow these steps:
+To compile it, first cd into the new directory and follow these steps:
 
 ./autogen.sh
 ./configure
 make
-make install
+sudo make install
