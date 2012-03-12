@@ -39,11 +39,6 @@ while clients and ports appear.
 
 Example:       aj-snapshot -d connections.xml
 
-The daemon restores connections every 200 ms. 
-(defined by POLLING_INTERVAL_MS in aj-snapshot.c)
-For JACK connections, restoring is only done when
-the connections did actually change.
-
 You can ask the daemon to reload the XML file by sending it the 
 HUP signal. This makes it possible to add new connections while 
 the daemon is running, store the connection state by overwriting 

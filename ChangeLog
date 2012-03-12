@@ -15,3 +15,11 @@ Fixed bug where aj-snapshot would not restore connections to a2jmidid ports.
 Refactoring of ignore-clients code.
 0.9.5
 Added daemon mode.
+0.9.6
+Quite an extensive rewrite of aj-snapshot.c to have less code duplication,
+and better overview.
+Changed the way daemon mode works. Connections are restored when new ports
+are registered, both for ALSA and JACK.
+Added '-p/--poll' flag so you can specify how often aj-snapshot should check
+for new ports.
+Added brand new manual page.
