@@ -229,20 +229,18 @@ int main(int argc, char **argv)
     if ((system & ALSA) == ALSA) {
         seq = alsa_initialize(seq);
         if (seq){
-            if (remove_connections){
-                alsa_remove_connections(seq);
-                VERBOSE("aj-snapshot: all ALSA connections removed.\n");
-            } 
             system_ready |= ALSA;
         } 
         else {
-            if (remove_connections) VERBOSE("aj-snapshot: did NOT remove ALSA connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store ALSA connections!\n");
                     break;
                 case RESTORE:
                     VERBOSE("aj-snapshot: will NOT restore ALSA connections!\n");
+                    break;
+                case REMOVE_ONLY:
+                    VERBOSE("aj-snapshot: will NOT remove ALSA connections!\n");
                     break;
                 default:
                     break;
@@ -253,20 +251,18 @@ int main(int argc, char **argv)
     if ((system & JACK) == JACK) {
         jack_initialize(&jackc, (action == DAEMON));
         if(jackc){
-            if (remove_connections){
-                jack_remove_connections(jackc);
-                VERBOSE("aj-snapshot: all JACK connections removed.\n");
-            }
             system_ready |= JACK;
         } 
         else {
-            if (remove_connections) VERBOSE("aj-snapshot: did NOT remove JACK connections\n");
             switch (action){
                 case STORE:
                     VERBOSE("aj-snapshot: will NOT store JACK connections!\n");
                     break;
                 case RESTORE:
                     VERBOSE("aj-snapshot: will NOT restore JACK connections!\n");
+                    break;
+                case REMOVE_ONLY:
+                    VERBOSE("aj-snapshot: will NOT remove JACK connections!\n");
                     break;
                 default:
                     break;
@@ -277,58 +273,66 @@ int main(int argc, char **argv)
 
     // STORE/RESTORE CONNECTIONS
 
-    if(action != DAEMON){
-        // If not in daemon mode, store/restore snapshots
-        if ((system_ready & ALSA) == ALSA) {
-            switch (action){
-                case STORE:
-                    alsa_store(seq, xml_node);
-                    VERBOSE("aj-snapshot: ALSA connections stored!\n");
-                    break;
-                case RESTORE:
-                    alsa_restore(seq, xml_node);
-                    if(verbose){
-                        if(alsa_success){ 
-                            fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
-                        } else {
-                            fprintf(stdout, "aj-snapshot: all ALSA connections could not be restored!\n");
-                            exit_success = 0;
-                        }
+    if ((system_ready & ALSA) == ALSA) {
+        if (remove_connections){
+            alsa_remove_connections(seq);
+            VERBOSE("aj-snapshot: all ALSA connections removed.\n");
+        } 
+        switch (action){
+            case STORE:
+                alsa_store(seq, xml_node);
+                VERBOSE("aj-snapshot: ALSA connections stored!\n");
+                break;
+            case RESTORE:
+            case DAEMON:
+                alsa_restore(seq, xml_node);
+                if(verbose){
+                    if(alsa_success){ 
+                        fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
+                    } else {
+                        fprintf(stdout, "aj-snapshot: all ALSA connections could not be restored!\n");
+                        exit_success = 0;
                     }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        if ((system_ready & JACK) == JACK) {
-            switch (action){
-                case STORE:
-                    jack_store(jackc, xml_node);
-                    VERBOSE("aj-snapshot: JACK connections stored!\n");
-                    break;
-                case RESTORE:
-                    jack_restore(&jackc, xml_node);
-                    if(verbose){
-                        if(jack_success){ 
-                            fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
-                        } else {
-                            fprintf(stdout, "aj-snapshot: all JACK connections could not be restored!\n");
-                            exit_success = 0;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Write file when storing:
-        if(action == STORE){
-            write_xml(filename, xml_node, force);
+                }
+                break;
+            default:
+                break;
         }
     }
-    else {
+
+    if ((system_ready & JACK) == JACK) {
+        if (remove_connections){
+            jack_remove_connections(jackc);
+            VERBOSE("aj-snapshot: all JACK connections removed.\n");
+        }
+        switch (action){
+            case STORE:
+                jack_store(jackc, xml_node);
+                VERBOSE("aj-snapshot: JACK connections stored!\n");
+                break;
+            case RESTORE:
+            case DAEMON:
+                jack_restore(&jackc, xml_node);
+                if(verbose){
+                    if(jack_success){ 
+                        fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
+                    } else {
+                        fprintf(stdout, "aj-snapshot: all JACK connections could not be restored!\n");
+                        exit_success = 0;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Write file when storing:
+    if(action == STORE){
+        write_xml(filename, xml_node, force);
+    }
+
+    if(action == DAEMON) {
         // Run Daemon
         daemon_running = 1;
         // initialize poll file descriptors if we use ALSA
