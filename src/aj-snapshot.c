@@ -208,9 +208,6 @@ int main(int argc, char **argv)
         sigaction(SIGINT, &sig_int_handler, NULL);
         sigaction(SIGTERM, &sig_int_handler, NULL);
         sigaction(SIGHUP, &sig_hup_handler, NULL);
-
-        daemon_running = 1; // We will be less verbose in daemon mode.
-                            // because we share code between daemon mode and normal restore, we set this early.
     }
 
     // Get XML node first:
@@ -276,6 +273,14 @@ int main(int argc, char **argv)
         }
     }
 
+    // We set daemon_running here because in initialize_jack, we don't want it
+    // to be on (because we check it to see if we have to say that the JACK server
+    // was started while the daemon was running). And when restoring after this, 
+    // we want to be less verbose, and daemon_running should be on.
+    // This is the result of sharing the first restore with daemon mode.
+
+    if(action == DAEMON) daemon_running = 1;
+
     // STORE/RESTORE CONNECTIONS
 
     if ((system_ready & ALSA) == ALSA) {
@@ -288,8 +293,10 @@ int main(int argc, char **argv)
                 alsa_store(seq, xml_node);
                 VERBOSE("aj-snapshot: ALSA connections stored!\n");
                 break;
-            case RESTORE:
             case DAEMON:
+                alsa_restore(seq, xml_node);
+                break;
+            case RESTORE:
                 alsa_restore(seq, xml_node);
                 if(verbose){
                     if(alsa_success){ 
@@ -315,8 +322,10 @@ int main(int argc, char **argv)
                 jack_store(jackc, xml_node);
                 VERBOSE("aj-snapshot: JACK connections stored!\n");
                 break;
-            case RESTORE:
             case DAEMON:
+                jack_restore(&jackc, xml_node);
+                break;
+            case RESTORE:
                 jack_restore(&jackc, xml_node);
                 if(verbose){
                     if(jack_success){ 
