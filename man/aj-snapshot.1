@@ -16,7 +16,7 @@ Only store or restore ALSA midi connections. Also works in daemon mode.
 .PP
 \fB-d \fRor \fB--daemon\fR
 .IP ""
-Run aj-snapshot in daemon mode. Aj-snapshot will first try to restore the connections from the specified snapshot file. After this, it will wait for new ports to be registered with ALSA or JACK. Every second by default, aj-snapshot will check if new ports are registered in ALSA or JACK. When this is the case, it will try to restore the connections from your snapshot file. If you start aj-snapshot in daemon mode, you don't need to specify the \fB-r\fR,\fB--restore\fR flag as it is implied anyway. 
+Run aj-snapshot in daemon mode. Aj-snapshot will first try to restore the connections from the specified snapshot file. After this, it will wait for new ports to be registered with ALSA or JACK. Every second by default, aj-snapshot will check if new ports were registered in ALSA or JACK. When this is the case, it will try to restore the connections from your snapshot file. If you start aj-snapshot in daemon mode, you don't need to specify the \fB-r\fR,\fB--restore\fR flag as it is implied anyway. 
 .IP ""
 If you send the HUP signal to the daemon, the daemon will reload the snapshot file. This gives you the possibility to trigger a connections restore. For an example on how to do this, see the EXAMPLES section below. When you combine the daemon mode with the \fB-x\fR,\fB--remove\fR option, sending the HUP signal to the daemon will clear all connections before restoring.
 .IP ""
@@ -45,7 +45,7 @@ When you specify the \fB-r\fR flag, aj-snapshot will try to restore all ALSA and
 .PP
 \fB-x \fRor \fB--remove\fR
 .IP ""
-The \fB-x\fR option can be used when restoring connections, or when running in daemon mode. With this option, aj-snapshot will remove all existing connections before restoring the snapshot file. When you combine it with the \fB-a\fR or \fB-j\fR option, only the connections for the specific subsystem (ALSA or JACK) will be removed. Without the \fB-x\fR option, aj-snapshot will try to restore connections on top of the connections that are already active. 
+The \fB-x\fR option can be used when restoring connections, or when running in daemon mode. With this option, aj-snapshot will remove all existing connections before restoring the snapshot file. When you combine it with the \fB-a\fR or \fB-j\fR option, only the connections for the specific subsystem (ALSA or JACK) will be removed. Without the \fB-x\fR option, aj-snapshot will try to restore connections on top of the connections that are already active.
 .IP ""
 There is one more way in which you can use the \fB-x\fR option. If you call aj-snapshot without the \fIFILE\fR argument, you can use the \fB-x\fR option to remove all existing ALSA and JACK connections (without doing anything else). As before you can combine it with the \fB-a\fR or \fB-j\fR options.
 .PP
