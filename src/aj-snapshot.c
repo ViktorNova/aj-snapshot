@@ -208,6 +208,9 @@ int main(int argc, char **argv)
         sigaction(SIGINT, &sig_int_handler, NULL);
         sigaction(SIGTERM, &sig_int_handler, NULL);
         sigaction(SIGHUP, &sig_hup_handler, NULL);
+
+        daemon_running = 1; // We will be less verbose in daemon mode.
+                            // because we share code between daemon mode and normal restore, we set this early.
     }
 
     // Get XML node first:
@@ -237,6 +240,7 @@ int main(int argc, char **argv)
                     VERBOSE("aj-snapshot: will NOT store ALSA connections!\n");
                     break;
                 case RESTORE:
+                case DAEMON:
                     VERBOSE("aj-snapshot: will NOT restore ALSA connections!\n");
                     break;
                 case REMOVE_ONLY:
@@ -259,6 +263,7 @@ int main(int argc, char **argv)
                     VERBOSE("aj-snapshot: will NOT store JACK connections!\n");
                     break;
                 case RESTORE:
+                case DAEMON:
                     VERBOSE("aj-snapshot: will NOT restore JACK connections!\n");
                     break;
                 case REMOVE_ONLY:
@@ -334,7 +339,6 @@ int main(int argc, char **argv)
 
     if(action == DAEMON) {
         // Run Daemon
-        daemon_running = 1;
         // initialize poll file descriptors if we use ALSA
         // and connect a port to the system announce port.
         if ((system_ready & ALSA) == ALSA) {
