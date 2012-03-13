@@ -224,7 +224,7 @@ int main(int argc, char **argv)
             break;
     }
 
-    // Initialize clients with ALSA and JACK and remove connections if necessary.
+    // Initialize clients with ALSA and JACK.
 
     if ((system & ALSA) == ALSA) {
         seq = alsa_initialize(seq);
@@ -286,7 +286,8 @@ int main(int argc, char **argv)
     if ((system_ready & ALSA) == ALSA) {
         if (remove_connections){
             alsa_remove_connections(seq);
-            VERBOSE("aj-snapshot: all ALSA connections removed.\n");
+            if(verbose && !daemon_running) 
+                fprintf(stdout, "aj-snapshot: all ALSA connections removed.\n");
         } 
         switch (action){
             case STORE:
@@ -315,7 +316,8 @@ int main(int argc, char **argv)
     if ((system_ready & JACK) == JACK) {
         if (remove_connections){
             jack_remove_connections(jackc);
-            VERBOSE("aj-snapshot: all JACK connections removed.\n");
+            if(verbose && !daemon_running) 
+                fprintf(stdout, "aj-snapshot: all JACK connections removed.\n");
         }
         switch (action){
             case STORE:
