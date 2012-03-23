@@ -24,7 +24,7 @@ static void usage(void)
 {
     fprintf(stdout, " -------------------------------------------------------------------------------------\n");
     fprintf(stdout, " aj-snapshot: Store/restore JACK and/or ALSA midi connections to/from an xml file     \n");
-    fprintf(stdout, "              Copyright (C) 2009-2011 Lieven Moors and Jari Suominen                  \n");
+    fprintf(stdout, "              Copyright (C) 2009-2012 Lieven Moors and Jari Suominen                  \n");
     fprintf(stdout, "                                                                                      \n");
     fprintf(stdout, " Without options -a or -j, all actions apply to both ALSA and JACK connections        \n");
     fprintf(stdout, " Without option -r, and with 'file', aj-snapshot will store connections to file.      \n");
