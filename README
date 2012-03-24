@@ -1,127 +1,42 @@
-aj-snapshot is a command line utility to store/restore all ALSA 
-and/or JACK connections to/from an XML file
+Aj-snapshot is a command line utility to store/restore all ALSA 
+and/or JACK connections to/from an XML file.
 
-To compile this program, you will need:
+To compile this program, you will need these libraries:
 
 - the ALSA library and headers (libasound)
 - the JACK library and headers (libjack)
 - the MXML library and headers (libmxml)
 
----------------------------------------------------------------
+On Debian based systems, you will also need the development versions 
+of these packages. These are marked by the -dev suffix.
+E.g. you would need to have both libasound, and libasound-dev installed.
 
-Aj-snapshot takes an optional filename as an argument.
-By default aj-snapshot will store all ALSA and JACK connections
-to this file using XML syntax.
- 
-If you are going to overwrite an existing file, aj-snapshot
-will ask you whether you want to do this.
+-------------------------------------------------
 
-Example:       aj-snapshot connections.xml
+To install aj-snapshot do :
 
----------------------------------------------------------------
+tar xvf aj-snapshot-X.X.X.tar.bz2
+cd aj-snapshot-X.X.X
 
-With the '-f, --force' option, aj-snapshot will not ask whether
-you want to overwrite an existing file. The file will become a
-a new snapshot file, whatever it used to be!
+./configure
+make
+sudo make install 
 
----------------------------------------------------------------
+(or: sudo make install DESTDIR=/path/)
 
-When you specify the '-r, --restore' option, aj-snapshot will 
-restore all connections from an existing xml file.
+-------------------------------------------------
 
-Example:       aj-snapshot -r connections.xml
+For more information on how to use aj-snapshot see:
+http://aj-snapshot.sourceforge.net/
 
----------------------------------------------------------------
+You can read the manual page before installation 
+from within the source directory with:
+man man/aj-snapshot.1
 
-When you specify the '-d, --daemon' option, aj-snapshot will
-keep on running until it is stopped, restoring connections
-while clients and ports appear.
+Or after installation with:
+man aj-snapshot
 
-Example:       aj-snapshot -d connections.xml
+or do:
+aj-snapshot -h
 
-You can ask the daemon to reload the XML file by sending it the 
-HUP signal. This makes it possible to add new connections while 
-the daemon is running, store the connection state by overwriting 
-the existing XML file with another instance of aj-snapshot,
-and reload the file by sending the HUP signal to the daemon.
-When combining '-d' and '-x' options, all connections are removed
-before the daemon reloads the XML file.
-
-Example:    aj-snapshot -dx connections.xml &
-            ... add more connections ...
-            aj-snapshot -f connections.xml
-            kill -HUP $(pidof aj-snapshot)
-
-NOTE: aj-snapshot will try to survive a JACK server shutdown.
-
-----------------------------------------------------------------
-
-You can also limit storing/restoring connections to a specific
-subsystem (ALSA or JACK) with the options '-a, --alsa' and 
-'-j, --jack'.
-
-Examples:
-
-store JACK connections only to connections.xml:
-
-            aj-snapshot -j connections.xml 
-
-restore ALSA connections only from connections.xml:
-
-	        aj-snapshot -ra connections.xml
-
-run in daemon mode for ALSA connections only:
-
-            aj-snapshot -da connections.xml &
-
----------------------------------------------------------------
-
-With the '-i, --ignore' option, you can ask aj-snapshot to
-ignore certain clients. You can repeat this option (upto 50
-times). You have to specify one client name as an argument to 
-this option, and the name has to be the exact name of the 
-client. When the client name contains spaces, or any other 
-special characters, these have to be quoted from the shell. 
-You can ignore clients when you store, or when you restore 
-connections. Ignoring clients when restoring will keep the 
-snapshot file intact.
-
-Examples:       
-
-  aj-snapshot -i 'Midi Through' -i Ardour2 connections.xml
-  aj-snapshot -ar -i fluidsynth connections.xml
-
----------------------------------------------------------------
-
-With the '-q, --quiet' option, you can ask aj-snapshot to not
-print any information about what happens when storing/restoring
-connections. This includes the information about failed 
-connections, which are not considered real errors in this 
-context.
-
----------------------------------------------------------------
-
-If you specify the '-x, --remove' option when restoring from a 
-file, aj-snapshot will remove all existing connections 
-before restoring, so you will start from a clean slate.
-
-Example:       aj-snapshot -rax connections.xml
-
-removes all existing ALSA connections first, and then restores 
-all ALSA connections from connections.xml
-
----------------------------------------------------------------
-
-When you specify the '-x, --remove' option whithout specifying
-a filename, aj-snapshot will just remove all existing
-connections of the specified subsystem.
-
-Example:       aj-snapshot -x
-
-removes all ALSA and JACK connections
-
-               aj-snapshot -jx
-
-removes all JACK connections
-
-----------------------------------------------------------------
+to get a short summary of all the options.
