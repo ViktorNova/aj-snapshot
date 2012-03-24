@@ -1,5 +1,5 @@
 /************************************************************************/
-/* Copyright (C) 2009-2011 Lieven Moors and Jari Suominen               */
+/* Copyright (C) 2009-2012 Lieven Moors and Jari Suominen               */
 /*                                                                      */
 /* This file is part of aj-snapshot.                                    */
 /*                                                                      */
