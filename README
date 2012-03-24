@@ -1,7 +1,7 @@
 Aj-snapshot is a command line utility to store/restore all ALSA 
 and/or JACK connections to/from an XML file.
 
-To compile this program, you will need these libraries:
+To compile this program from source, you will need these libraries:
 
 - the ALSA library and headers (libasound)
 - the JACK library and headers (libjack)
