@@ -168,11 +168,11 @@ void jack_restore_clients( jack_client_t** jackc, mxml_node_t* jack_node )
     }
 }
 
-void jack_restore( jack_client_t** jackc, mxml_node_t* xml_node )
+void jack_restore( jack_client_t** jackc, mxml_node_t* root_node )
 {
    
     mxml_node_t* jack_node;
-    jack_node = mxmlFindElement(xml_node, xml_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
+    jack_node = mxmlFindElement(root_node, root_node, "jack", NULL, NULL, MXML_DESCEND_FIRST);
     jack_restore_clients(jackc, jack_node);
 }
 
@@ -207,9 +207,9 @@ void jack_store_connections( jack_client_t* jackc, const char* port_name, mxml_n
     }
 }
 
-void jack_store( jack_client_t* jackc, mxml_node_t* xml_node )
+void jack_store( jack_client_t* jackc, mxml_node_t* root_node )
 {
-    mxml_node_t* jack_node = mxmlNewElement(xml_node, "jack");
+    mxml_node_t* jack_node = mxmlNewElement(root_node, "jack");
     mxml_node_t* client_node = NULL;
     mxml_node_t* port_node = NULL;
 

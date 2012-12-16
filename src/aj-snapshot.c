@@ -104,6 +104,7 @@ void reload_xml_file(int sig) {
     reload_xml = 1;
 }
 
+
 int main(int argc, char **argv)
 { 
     int c;
@@ -117,6 +118,7 @@ int main(int argc, char **argv)
     snd_seq_t* seq = NULL;
     jack_client_t* jackc = NULL;
     mxml_node_t* xml_node = NULL;
+    mxml_node_t* root_node = NULL;
     int exit_success = 1;
     unsigned int polling_interval_ms = 1000;
 
@@ -215,10 +217,15 @@ int main(int argc, char **argv)
     switch (action){
         case STORE:
             xml_node = mxmlNewXML("1.0");
+            root_node = mxmlNewElement(xml_node, "aj-snapshot");
             break;
         case RESTORE:
         case DAEMON:
             xml_node = read_xml(filename, xml_node);
+            root_node = mxmlFindElement(xml_node, xml_node, "aj-snapshot", NULL, NULL, MXML_DESCEND_FIRST);
+            if(!root_node){ // Still read older aj-snapshot files, that didn't have the aj-snapshot root node.
+                root_node = xml_node;
+            }
             break;
         default:
             break;
@@ -291,14 +298,14 @@ int main(int argc, char **argv)
         } 
         switch (action){
             case STORE:
-                alsa_store(seq, xml_node);
+                alsa_store(seq, root_node);
                 VERBOSE("aj-snapshot: ALSA connections stored!\n");
                 break;
             case DAEMON:
-                alsa_restore(seq, xml_node);
+                alsa_restore(seq, root_node);
                 break;
             case RESTORE:
-                alsa_restore(seq, xml_node);
+                alsa_restore(seq, root_node);
                 if(verbose){
                     if(alsa_success){ 
                         fprintf(stdout, "aj-snapshot: ALSA connections restored!\n");
@@ -321,14 +328,14 @@ int main(int argc, char **argv)
         }
         switch (action){
             case STORE:
-                jack_store(jackc, xml_node);
+                jack_store(jackc, root_node);
                 VERBOSE("aj-snapshot: JACK connections stored!\n");
                 break;
             case DAEMON:
-                jack_restore(&jackc, xml_node);
+                jack_restore(&jackc, root_node);
                 break;
             case RESTORE:
-                jack_restore(&jackc, xml_node);
+                jack_restore(&jackc, root_node);
                 if(verbose){
                     if(jack_success){ 
                         fprintf(stdout, "aj-snapshot: JACK connections restored!\n");
@@ -382,6 +389,10 @@ int main(int argc, char **argv)
                 reload_xml = 0;
                 if(verbose) fprintf(stdout, "aj-snapshot: reloading XML file: %s\n", filename);
                 xml_node = read_xml(filename, xml_node);
+                root_node = mxmlFindElement(xml_node, xml_node, "aj-snapshot", NULL, NULL, MXML_DESCEND_FIRST);
+                if(!root_node){ // Still read older aj-snapshot files, that didn't have the aj-snapshot root node.
+                    root_node = xml_node;
+                }
 
                 if ((system_ready & ALSA) == ALSA) {
                     if(remove_connections){ 
@@ -419,14 +430,14 @@ int main(int argc, char **argv)
                     if (jack_dirty > 0){
                         jack_dirty = 0;
                         pthread_mutex_unlock( &registration_callback_lock );
-                        jack_restore(&jackc, xml_node);
+                        jack_restore(&jackc, root_node);
                     }
                     else pthread_mutex_unlock( &registration_callback_lock );
                     break;
                 case ALSA:
                     if(alsa_dirty > 0){
                         alsa_dirty = 0;
-                        alsa_restore(seq, xml_node);
+                        alsa_restore(seq, root_node);
                     }
                     break;
                 case ALSA_JACK:
@@ -438,8 +449,8 @@ int main(int argc, char **argv)
                         pthread_mutex_unlock( &registration_callback_lock );
                         alsa_dirty = 0;
 
-                        alsa_restore(seq, xml_node);
-                        jack_restore(&jackc, xml_node);
+                        alsa_restore(seq, root_node);
+                        jack_restore(&jackc, root_node);
                     }
                     else pthread_mutex_unlock( &registration_callback_lock );
                default:

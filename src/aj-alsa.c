@@ -127,11 +127,11 @@ void alsa_store_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
     }
 }
 
-void alsa_store( snd_seq_t* seq, mxml_node_t* xml_node )
+void alsa_store( snd_seq_t* seq, mxml_node_t* root_node )
 {
     mxml_node_t* alsa_node;
 
-    alsa_node = mxmlNewElement(xml_node, "alsa");
+    alsa_node = mxmlNewElement(root_node, "alsa");
 
     alsa_store_clients( seq, alsa_node );
 
@@ -237,11 +237,11 @@ void alsa_restore_clients( snd_seq_t* seq, mxml_node_t* alsa_node )
     }
 }
 
-void alsa_restore( snd_seq_t* seq, mxml_node_t* xml_node )
+void alsa_restore( snd_seq_t* seq, mxml_node_t* root_node )
 {
     mxml_node_t* alsa_node;
 
-    alsa_node = mxmlFindElement(xml_node, xml_node, "alsa", NULL, NULL, MXML_DESCEND_FIRST);
+    alsa_node = mxmlFindElement(root_node, root_node, "alsa", NULL, NULL, MXML_DESCEND_FIRST);
 
     alsa_restore_clients( seq, alsa_node );
 }

@@ -26,7 +26,9 @@ const char* xml_whitespace_cb( mxml_node_t *node, int where )
 
 	if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE)
 	{
-		if ( !strcmp(name, "alsa") || !strcmp(name, "jack") ){
+		if ( !strcmp(name, "alsa") || 
+             !strcmp(name, "jack") || 
+             !strcmp(name, "aj-snapshot") ){
 		return ("\n");
 		}
 		if ( !strcmp(name, "client") ){
