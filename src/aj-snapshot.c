@@ -88,7 +88,7 @@ int is_ignored_client(const char *name) // function to check if string is name o
 {
     int i;
     for(i = 0; i < ic_n; i++){
-        if( strcmp(name, ignored_clients[i]) == 0) return 1;
+        if (fnmatch(ignored_clients[i], name, 0) == 0) return 1;
     }
     return 0;
 }
